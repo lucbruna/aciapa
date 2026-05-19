@@ -2,7 +2,7 @@ import { Socket } from "socket.io-client";
 
 declare global {
   interface Window {
-    nexuspro?: {
+    aciapa?: {
       reload?: () => void;
       electron?: boolean;
       versao?: string;

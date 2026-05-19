@@ -32,10 +32,10 @@ export default function CRM({ toast, api, reload }) {
   const exportPDF=()=>{
     const doc=new jsPDF(); const ind:[number,number,number]=[99,102,241],dark:[number,number,number]=[2,4,8];
     doc.setFillColor(...dark); doc.rect(0,0,210,38,"F");
-    doc.setTextColor(...ind); doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.text("NexusPro — Clientes",14,20);
+    doc.setTextColor(...ind); doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.text("ACIAPA — Clientes",14,20);
     doc.setFontSize(9); doc.setTextColor(180,180,180); doc.text(`Gerado: ${new Date().toLocaleDateString("pt-BR")} — ${list.length} clientes`,14,32);
     autoTable(doc,{startY:45,head:[["Nome","Plano","Valor","Status","Situação","Cidade"]],body:list.map(c=>[c.nome,c.plano,fmt(c.valor),c.status,c._situacao||"",c.cidade||""]),theme:"grid",headStyles:{fillColor:dark,textColor:ind,fontStyle:"bold"},bodyStyles:{fontSize:8},alternateRowStyles:{fillColor:[240,245,255]}});
-    const pgs=doc.getNumberOfPages(); for(let p=1;p<=pgs;p++){doc.setPage(p);doc.setFillColor(...dark);doc.rect(0,282,210,15,"F");doc.setTextColor(100,100,100);doc.setFontSize(7);doc.text(`NexusPro CRM — Pág ${p}/${pgs}`,14,290);}
+    const pgs=doc.getNumberOfPages(); for(let p=1;p<=pgs;p++){doc.setPage(p);doc.setFillColor(...dark);doc.rect(0,282,210,15,"F");doc.setTextColor(100,100,100);doc.setFontSize(7);doc.text(`ACIAPA CRM — Pág ${p}/${pgs}`,14,290);}
     doc.save(`clientes_${Date.now()}.pdf`); toast("PDF exportado!","success");
   };
 
@@ -134,7 +134,7 @@ export default function CRM({ toast, api, reload }) {
           <div style={{background:C.indigoDim,border:`1px solid ${C.indigoBorder}`}} className="rounded-xl p-4"><div style={{color:C.indigo}} className="font-bold text-sm mb-2">Colunas esperadas:</div><div className="flex flex-wrap gap-1.5">{["nome","email","telefone","plano","valor","status","dataVencimento","cidade"].map(c=><span key={c} style={{background:"rgba(99,102,241,0.1)",color:C.sub}} className="text-[11px] px-2 py-0.5 rounded font-mono">{c}</span>)}</div></div>
           <label style={{background:C.indigoDim,border:`2px dashed ${C.indigoBorder}`,cursor:"pointer"}} className="flex flex-col items-center justify-center gap-3 py-10 rounded-2xl hover:bg-indigo-500/10 transition-colors">
             <Upload size={28} style={{color:C.indigo}}/><span style={{color:C.indigo}} className="font-bold text-sm">Clique para selecionar .xlsx ou .csv</span>
-            <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={async e=>{ const f=e.target.files?.[0]; if(!f) return; const fd=new FormData(); fd.append("file",f); const r=await fetch("/api/clientes/import",{method:"POST",headers:{Authorization:`Bearer ${localStorage.getItem("nexus_token")}`},body:fd}); const d=await r.json(); if(d.ok){toast(`${d.importados} clientes importados!`,"success");setImpM(false);load();reload();}else toast(d.error||"Erro","error"); e.target.value=""; }}/>
+            <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={async e=>{ const f=e.target.files?.[0]; if(!f) return; const fd=new FormData(); fd.append("file",f); const r=await fetch("/api/clientes/import",{method:"POST",headers:{Authorization:`Bearer ${localStorage.getItem("aciapa_token")}`},body:fd}); const d=await r.json(); if(d.ok){toast(`${d.importados} clientes importados!`,"success");setImpM(false);load();reload();}else toast(d.error||"Erro","error"); e.target.value=""; }}/>
           </label>
         </div>
       </Modal>

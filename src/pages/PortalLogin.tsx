@@ -22,7 +22,7 @@ export default function PortalLogin({ onLogin }) {
       });
       const d = await r.json();
       if (!d.ok) return setErro(d.error || "Credenciais inválidas");
-      localStorage.setItem("nexus_portal_token", d.token);
+      localStorage.setItem("aciapa_portal_token", d.token);
       onLogin(d.cliente);
     } catch {
       setErro("Erro de conexão");

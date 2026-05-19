@@ -11,7 +11,7 @@ function startServer() {
   return new Promise(resolve => {
     const entry = path.join(app.isPackaged ? process.resourcesPath : __dirname, "..", "server.js");
     serverProc  = fork(entry, [], { silent:true, env:{ ...process.env, PORT } });
-    serverProc.stdout?.on("data", d => { if (d.toString().includes("NexusPro")) resolve(); });
+    serverProc.stdout?.on("data", d => { if (d.toString().includes("ACIAPA")) resolve(); });
     serverProc.stderr?.on("data", d => console.error("[srv]", d.toString()));
     setTimeout(resolve, 8000);
   });
@@ -35,7 +35,7 @@ function createWindow() {
     width:   Math.min(1440, width  - 40),
     height:  Math.min(920,  height - 40),
     minWidth:  1150, minHeight: 740, center: true,
-    title: "NexusPro — Gestão Empresarial",
+    title: "ACIAPA — Gestão Empresarial",
     backgroundColor: "#020408",
     frame: false, titleBarStyle: "hidden",
     trafficLightPosition: { x:16, y:16 },
@@ -53,9 +53,9 @@ function createWindow() {
 
 function createTray() {
   tray = new Tray(nativeImage.createEmpty().resize({ width:16, height:16 }));
-  tray.setToolTip("NexusPro — Gestão Empresarial Inteligente");
+  tray.setToolTip("ACIAPA — Gestão Empresarial Inteligente");
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label:"NexusPro v2.0", enabled:false },
+    { label:"ACIAPA v2.0", enabled:false },
     { type:"separator" },
     { label:"Abrir Dashboard",  click:()=>{ mainWindow?.show(); mainWindow?.focus(); } },
     { label:"CRM — Clientes",   click:()=>{ mainWindow?.show(); } },
@@ -118,9 +118,9 @@ function checkUpdateSilent() {
 }
 
 app.whenReady().then(async ()=>{
-  console.log("[NexusPro] Iniciando sistema...");
+  console.log("[ACIAPA] Iniciando sistema...");
   await startServer();
-  try { await waitForServer(); } catch(_){ console.warn("[NexusPro] Timeout, abrindo mesmo assim..."); }
+  try { await waitForServer();   } catch(_){ console.warn("[ACIAPA] Timeout, abrindo mesmo assim..."); }
   createWindow();
   createTray();
   if (app.isPackaged) setTimeout(checkUpdateSilent, 5000);

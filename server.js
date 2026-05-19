@@ -1,5 +1,5 @@
 /**
- * NexusPro — Backend Completo v2.0
+ * ACIAPA — Backend Completo v2.0
  * Auth JWT · CRM · Financeiro · WhatsApp · IA · Kanban
  */
 "use strict";
@@ -29,7 +29,7 @@ app.use(express.json({ limit:"50mb" }));
 app.use(express.static(path.join(__dirname,"dist")));
 
 const upload     = multer({ dest:"uploads/", limits:{ fileSize:50*1024*1024 } });
-const JWT_SECRET = process.env.JWT_SECRET || "nexuspro_jwt_2025_fallback_key";
+const JWT_SECRET = process.env.JWT_SECRET || "aciapa_jwt_2025_fallback_key";
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -145,7 +145,7 @@ async function initWA() {
     if (!fs.existsSync("auth_info")) fs.mkdirSync("auth_info");
     const { state, saveCreds } = await useMultiFileAuthState("auth_info");
     const { version } = await fetchLatestBaileysVersion();
-    waClient = makeWASocket({ version, logger:pino({level:"silent"}), printQRInTerminal:false, auth:state, browser:["NexusPro","Chrome","2.0"] });
+    waClient = makeWASocket({ version, logger:pino({level:"silent"}), printQRInTerminal:false, auth:state, browser:["ACIAPA","Chrome","2.0"] });
     waClient.ev.on("connection.update", async({connection,lastDisconnect,qr})=>{
       if (qr) { waStatus="qr"; waQR=await qrcode.toDataURL(qr); io.emit("wa_qr",waQR); io.emit("wa_status",{status:"qr"}); }
       if (connection==="open")  { waStatus="connected"; waQR=null; io.emit("wa_status",{status:"connected"}); processWaQueue(); }
@@ -241,6 +241,21 @@ app.put("/api/clientes/:id",   auth(), (req,res)=>{
 app.delete("/api/clientes/:id",auth(["super_admin","admin"]), (req,res)=>{ db.clientes.delete(req.params.id); io.emit("data_update",{type:"cliente"}); res.json({ok:true}); });
 app.post("/api/clientes/:id/pagar", auth(), (req,res)=>{ const c=db.clientes.findById(req.params.id); if(!c) return res.status(404).json({error:"Não encontrado"}); const m=mesN(),a=anoN(),valor=req.body.valor||c.valor; if(!c.pagamentos) c.pagamentos=[]; const idx=c.pagamentos.findIndex(p=>p.mes===m&&p.ano===a); const pag={mes:m,ano:a,pago:true,dataPagamento:hoje(),valor}; if(idx>=0) c.pagamentos[idx]=pag; else c.pagamentos.push(pag); db.clientes.update(c.id,{pagamentos:c.pagamentos}); db.transacoes.insert({tipo:"entrada",categoria:"Mensalidade",descricao:`Mensalidade ${c.nome.split(" ")[0]}`,valor,data:hoje(),status:"pago",clienteId:c.id}); io.emit("data_update",{type:"pagamento"}); res.json({ok:true}); });
 app.post("/api/clientes/import", auth(["super_admin","admin"]), upload.single("file"), (req,res)=>{ if(!req.file) return res.status(400).json({error:"Arquivo não enviado"}); try { const wb=XLSX.readFile(req.file.path);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:""});let n=0; rows.forEach(r=>{ if(!r.nome&&!r.Nome) return; db.clientes.insert({nome:String(r.nome||r.Nome||"").trim(),email:String(r.email||r.Email||"").trim(),telefone:String(r.telefone||r.Telefone||"").replace(/\D/g,""),cpfCnpj:String(r.cpfCnpj||r["CPF/CNPJ"]||"").trim(),plano:String(r.plano||r.Plano||"Basic").trim(),valor:+(String(r.valor||r.Valor||"0").replace(/[R$\s.]/g,"").replace(",","."))||0,status:String(r.status||r.Status||"ativo").toLowerCase().includes("ativ")?"ativo":"inativo",dataVencimento:r.dataVencimento||hoje(),cidade:String(r.cidade||r.Cidade||"").trim(),segmento:String(r.segmento||r.Segmento||"").trim(),pagamentos:[],tags:[],score:100}); n++; }); fs.unlinkSync(req.file.path); io.emit("data_update",{type:"cliente"}); res.json({ok:true,importados:n}); } catch(e){ try{fs.unlinkSync(req.file.path);}catch(_){} res.status(500).json({error:e.message}); } });
+
+// ASSOCIADOS
+app.get("/api/associados", auth(), (req,res)=>{
+  const {status,search}=req.query;
+  let list=db.associados.all;
+  if(status&&status!=="todos") list=list.filter(a=>a.status===status);
+  if(search){const q=search.toLowerCase();list=list.filter(a=>a.nome.toLowerCase().includes(q)||a.email.toLowerCase().includes(q)||(a.telefone||"").includes(q));}
+  res.json(list);
+});
+app.get("/api/associados/export", auth(), (_,res)=>{ const rows=db.associados.all.map(a=>({Nome:a.nome,Email:a.email,Telefone:a.telefone,CPF:a.cpf,"Data de Entrada":a.dataEntrada,Status:a.status,Cidade:a.cidade})); const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Associados");const buf=XLSX.write(wb,{type:"buffer",bookType:"xlsx"});res.setHeader("Content-Disposition",`attachment; filename="associados_${Date.now()}.xlsx"`);res.setHeader("Content-Type","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");res.send(buf); });
+app.get("/api/associados/:id",   auth(), (req,res)=>{ const a=db.associados.findById(req.params.id); if(!a) return res.status(404).json({error:"Não encontrado"}); res.json(a); });
+app.post("/api/associados",      auth(), (req,res)=>{ const a=db.associados.insert(req.body); io.emit("data_update",{type:"associado"}); res.json({ok:true,associado:a}); });
+app.put("/api/associados/:id",   auth(), (req,res)=>{ const a=db.associados.update(req.params.id,req.body); io.emit("data_update",{type:"associado"}); res.json({ok:true,associado:a}); });
+app.delete("/api/associados/:id",auth(["super_admin","admin"]), (req,res)=>{ db.associados.delete(req.params.id); io.emit("data_update",{type:"associado"}); res.json({ok:true}); });
+app.post("/api/associados/import", auth(["super_admin","admin"]), upload.single("file"), (req,res)=>{ if(!req.file) return res.status(400).json({error:"Arquivo não enviado"}); try { const wb=XLSX.readFile(req.file.path);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:""});let n=0; rows.forEach(r=>{ if(!r.nome&&!r.Nome) return; db.associados.insert({nome:String(r.nome||r.Nome||"").trim(),email:String(r.email||r.Email||"").trim(),telefone:String(r.telefone||r.Telefone||"").replace(/\D/g,""),cpf:String(r.cpf||r.CPF||"").trim(),dataEntrada:r.dataEntrada||hoje(),status:String(r.status||r.Status||"ativo").toLowerCase().includes("ativ")?"ativo":"inativo",cidade:String(r.cidade||r.Cidade||"").trim(),observacoes:""}); n++; }); fs.unlinkSync(req.file.path); io.emit("data_update",{type:"associado"}); res.json({ok:true,importados:n}); } catch(e){ try{fs.unlinkSync(req.file.path);}catch(_){} res.status(500).json({error:e.message}); } });
 
 // KANBAN
 app.get("/api/kanban",         auth(), (_,res)=>res.json(db.kanban.all));
@@ -726,7 +741,7 @@ app.post("/api/notas-fiscais", auth(), async(req,res)=>{
   const cfg=db.settings.findOne({key:"empresa"})||{};
   const nf={
     ...req.body,
-    emitente:cfg.nomeEmpresa||"NexusPro Gestao",
+    emitente:cfg.nomeEmpresa||"ACIAPA Gestao",
     emitenteCnpj:cfg.cnpj||"00.000.000/0001-00",
     emitenteEndereco:cfg.endereco||"",
     emitenteTelefone:cfg.telefone||"",
@@ -750,7 +765,7 @@ app.delete("/api/notas-fiscais/:id", auth(), (req,res)=>{db.notas_fiscais.delete
 async function queryIAOllama(pergunta, contexto) {
   try {
     const r=await fetch("http://localhost:11434/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-      model:"llama3.2:3b",prompt:`Você é assistente IA do NexusPro. Responda em português.
+      model:"llama3.2:3b",prompt:`Você é assistente IA do ACIAPA. Responda em português.
 Voce pode tratar qualquer assunto perguntado pelo usuario. Use o contexto da empresa apenas quando a pergunta envolver dados internos.
 Contexto da empresa: ${JSON.stringify(contexto)}
 
@@ -803,14 +818,14 @@ function respostaGeral(pergunta,stats) {
     };
   }
   return {
-    resposta:`Posso tratar qualquer assunto. Sobre "${tema}", organize a resposta por objetivo, contexto, pontos principais, riscos e proximos passos. Para respostas mais profundas e criativas, mantenha Ollama ligado ou configure uma chave de IA nas configuracoes; sem provedor externo eu uso respostas locais e dados do NexusPro.`,
+    resposta:`Posso tratar qualquer assunto. Sobre "${tema}", organize a resposta por objetivo, contexto, pontos principais, riscos e proximos passos. Para respostas mais profundas e criativas, mantenha Ollama ligado ou configure uma chave de IA nas configuracoes; sem provedor externo eu uso respostas locais e dados do ACIAPA.`,
     tabela:[
       {Bloco:"Objetivo",Uso:"O que voce quer decidir, criar ou entender"},
       {Bloco:"Contexto",Uso:"Dados, restricoes, publico e prazo"},
       {Bloco:"Resposta",Uso:"Explicacao direta com passos praticos"},
       {Bloco:"Proximos passos",Uso:"Acoes recomendadas"},
     ],
-    resumo:`NexusPro: ${stats.ativos||0} clientes ativos, ${fmt(stats.receitaMes||0)} de receita no mes e ${stats.atrasados||0} inadimplentes.`,
+    resumo:`ACIAPA: ${stats.ativos||0} clientes ativos, ${fmt(stats.receitaMes||0)} de receita no mes e ${stats.atrasados||0} inadimplentes.`,
   };
 }
 
@@ -838,8 +853,8 @@ function queryIACompleta(pergunta,stats) {
   const alertas=[];
   if(stats.atrasados>0) alertas.push(`${stats.atrasados} clientes inadimplentes`);
   if(baixoEstoque.length>0) alertas.push(`${baixoEstoque.length} produtos com estoque baixo`);
-  if (q.includes("resumo")||q.includes("dashboard")||q.includes("nexus")||q.includes("empresa")) {
-    return {resposta:`Resumo NexusPro: ${stats.ativos} clientes ativos, ${fmt(stats.receitaMes)} receita no mes, ${stats.atrasados} inadimplentes, ${db.rh.count()} funcionarios, ${db.produtos.count()} produtos.`,alertas:alertas.length?alertas:null,acoes:["Ver dashboard","Ver clientes","Ver estoque"]};
+  if (q.includes("resumo")||q.includes("dashboard")||q.includes("aciapa")||q.includes("empresa")) {
+    return {resposta:`Resumo ACIAPA: ${stats.ativos} clientes ativos, ${fmt(stats.receitaMes)} receita no mes, ${stats.atrasados} inadimplentes, ${db.rh.count()} funcionarios, ${db.produtos.count()} produtos.`,alertas:alertas.length?alertas:null,acoes:["Ver dashboard","Ver clientes","Ver estoque"]};
   }
   return respostaGeral(pergunta,stats);
 }
@@ -847,10 +862,10 @@ function queryIACompleta(pergunta,stats) {
 async function queryIA(pergunta) {
   const cfg=db.settings.findOne({key:"empresa"})||{};
   const stats=getStats();
-  const ctxIA={...stats,empresa:cfg.nomeEmpresa||"NexusPro",produtos:db.produtos.count(),funcionarios:db.rh.count()};
+  const ctxIA={...stats,empresa:cfg.nomeEmpresa||"ACIAPA",produtos:db.produtos.count(),funcionarios:db.rh.count()};
   const ollamaResp = await queryIAOllama(pergunta, ctxIA);
   if (ollamaResp) return ollamaResp;
-  const sys="Você é assistente IA do NexusPro. Responda em português e trate qualquer assunto perguntado, sem restringir ao contexto interno. Use os dados da empresa quando forem relevantes. Em documentos juridicos, escreva com linguagem humana, natural, profissional e revisavel, evitando tom artificial; nao invente fatos, jurisprudencia, artigos, datas ou provas, e use campos entre colchetes quando faltar informacao. Retorne APENAS JSON: {\"resposta\":\"texto\",\"tabela\":[...]|null,\"grafico\":{...}|null,\"resumo\":\"texto\"|null,\"alertas\":[...]|null,\"acoes\":[...]|null}";
+  const sys="Você é assistente IA do ACIAPA. Responda em português e trate qualquer assunto perguntado, sem restringir ao contexto interno. Use os dados da empresa quando forem relevantes. Em documentos juridicos, escreva com linguagem humana, natural, profissional e revisavel, evitando tom artificial; nao invente fatos, jurisprudencia, artigos, datas ou provas, e use campos entre colchetes quando faltar informacao. Retorne APENAS JSON: {\"resposta\":\"texto\",\"tabela\":[...]|null,\"grafico\":{...}|null,\"resumo\":\"texto\"|null,\"alertas\":[...]|null,\"acoes\":[...]|null}";
   if (cfg.anthropicKey&&cfg.anthropicKey!=="***") { try { const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":cfg.anthropicKey,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sys,messages:[{role:"user",content:`Dados: ${JSON.stringify(ctxIA)}\n\nPergunta: ${pergunta}`}]})});const d=await r.json();return JSON.parse(d.content?.[0]?.text||"{}");}catch(e){}}
   if (cfg.openaiKey&&cfg.openaiKey!=="***") { try { const r=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${cfg.openaiKey}`},body:JSON.stringify({model:"gpt-4o-mini",max_tokens:2000,messages:[{role:"system",content:sys},{role:"user",content:`Dados: ${JSON.stringify(ctxIA)}\n\nPergunta: ${pergunta}`}]})});const d=await r.json();return JSON.parse(d.choices?.[0]?.message?.content||"{}");}catch(e){}}
   return queryIACompleta(pergunta,stats);
@@ -860,7 +875,7 @@ async function queryIA(pergunta) {
 app.get("/api/admin/backup", auth(["super_admin"]), async (req, res) => {
   const dirs = ["data", "uploads", "auth_info"];
   res.setHeader("Content-Type", "application/zip");
-  res.setHeader("Content-Disposition", `attachment; filename="nexuspro_backup_${new Date().toISOString().slice(0,10)}.zip"`);
+  res.setHeader("Content-Disposition", `attachment; filename="aciapa_backup_${new Date().toISOString().slice(0,10)}.zip"`);
   const archive = archiver("zip", { zlib: { level: 6 } });
   archive.pipe(res);
   for (const d of dirs) {
@@ -1000,7 +1015,7 @@ const PORT=process.env.PORT||3001;
 server.listen(PORT, ()=>{
   if (!fs.existsSync("auth_info")) fs.mkdirSync("auth_info");
   if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-  console.log(`\n==============================================\n  NexusPro v2.0 -- Iniciado!\n  http://localhost:${PORT}\n  Login: admin@nexuspro.com / nexus123\n==============================================\n`);
+  console.log(`\n==============================================\n  ACIAPA v2.0 -- Iniciado!\n  http://localhost:${PORT}\n  Login: admin@aciapa.com / nexus123\n==============================================\n`);
   const cfg=db.settings.findOne({key:"empresa"});
   if(cfg?.whatsappAtivo) setTimeout(initWA,3000);
 });

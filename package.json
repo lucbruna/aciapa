@@ -1,7 +1,7 @@
 {
-  "name": "nexus-pro",
+  "name": "aciapa",
   "version": "2.0.0",
-  "description": "NexusPro — SaaS Empresarial Completo: IA + WhatsApp + CRM + Financeiro + Kanban",
+  "description": "ACIAPA — SaaS Empresarial Completo: IA + WhatsApp + CRM + Financeiro + Kanban",
   "main": "server.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run frontend\"",
@@ -12,7 +12,7 @@
     "electron": "npm run build && electron electron/main.js",
     "build:exe": "npm run build && electron-builder --win nsis --x64",
     "build:portable": "npm run build && electron-builder --win portable --x64",
-    "package": "npm run build && pkg server.js --targets node18-win-x64 --output dist-exe/nexuspro.exe"
+    "package": "npm run build && pkg server.js --targets node18-win-x64 --output dist-exe/aciapa.exe"
   },
   "dependencies": {
     "archiver": "^8.0.0",
@@ -61,9 +61,9 @@
     "vite": "^5.0.8"
   },
   "build": {
-    "appId": "com.nexuspro.app",
-    "productName": "NexusPro",
-    "copyright": "NexusPro SaaS",
+    "appId": "com.aciapa.app",
+    "productName": "ACIAPA",
+    "copyright": "ACIAPA SaaS",
     "publish": {
       "provider": "github",
       "owner": "lucbruna",
@@ -80,7 +80,7 @@
         }
       ],
       "icon": "electron/icon.ico",
-      "artifactName": "NexusPro-Setup-${version}.${ext}"
+      "artifactName": "ACIAPA-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -89,7 +89,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "NexusPro",
+      "shortcutName": "ACIAPA",
       "installerIcon": "electron/icon.ico",
       "uninstallerIcon": "electron/icon.ico",
       "installerHeaderIcon": "electron/icon.ico",
@@ -130,8 +130,8 @@
     "whatsapp",
     "ia",
     "kanban",
-    "nexuspro"
+"aciapa"
   ],
-  "author": "NexusPro",
+  "author": "ACIAPA",
   "license": "MIT"
 }

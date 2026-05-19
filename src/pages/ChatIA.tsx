@@ -53,7 +53,7 @@ export default function ChatIA({ toast, api }) {
     const ind:[number,number,number]=[99,102,241], dark:[number,number,number]=[2,4,8];
     doc.setFillColor(...dark); doc.rect(0,0,210,35,"F");
     doc.setTextColor(...ind); doc.setFontSize(16); doc.setFont("helvetica","bold");
-    doc.text("NexusPro — Resultado IA",14,18);
+    doc.text("ACIAPA — Resultado IA",14,18);
     doc.setFontSize(9); doc.setTextColor(180,180,180);
     doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`,14,28);
     if(resp.resumo){ doc.setTextColor(0,0,0); doc.setFontSize(11); doc.text(resp.resumo,14,48); }
@@ -92,7 +92,7 @@ export default function ChatIA({ toast, api }) {
           <div className="flex flex-col items-center justify-center h-full gap-5">
             <div style={{background:C.indigoDim,border:`1px solid ${C.indigoBorder}`}} className="w-16 h-16 rounded-2xl flex items-center justify-center"><Sparkles size={28} style={{color:C.indigo}}/></div>
             <div className="text-center">
-              <div style={{color:C.text}} className="font-bold mb-1">Olá! Sou o assistente IA do NexusPro</div>
+              <div style={{color:C.text}} className="font-bold mb-1">Olá! Sou o assistente IA do ACIAPA</div>
               <div style={{color:C.muted}} className="text-sm">Pergunte sobre clientes, receitas, juridico, tecnologia, estudo ou qualquer tema</div>
             </div>
             <div className="grid grid-cols-2 gap-2 w-full max-w-2xl">

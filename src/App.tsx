@@ -5,6 +5,7 @@ import Login from "./pages/Login.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import CRM from "./pages/CRM.jsx";
+import Associados from "./pages/Associados.jsx";
 import Financeiro from "./pages/Financeiro.jsx";
 import WhatsApp from "./pages/WhatsApp.jsx";
 import ChatIA from "./pages/ChatIA.jsx";
@@ -38,19 +39,19 @@ function PortalApp() {
   const navigate = useNavigate();
   const location = useLocation();
   const [cliente, setCliente] = useState(() => {
-    const saved = sessionStorage.getItem("nexus_portal_cliente");
+    const saved = sessionStorage.getItem("aciapa_portal_cliente");
     return saved ? JSON.parse(saved) : null;
   });
 
   const handleLogin = c => {
     setCliente(c);
-    sessionStorage.setItem("nexus_portal_cliente", JSON.stringify(c));
+    sessionStorage.setItem("aciapa_portal_cliente", JSON.stringify(c));
     navigate("/portal/dashboard", { replace: true });
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("nexus_portal_token");
-    sessionStorage.removeItem("nexus_portal_cliente");
+    localStorage.removeItem("aciapa_portal_token");
+    sessionStorage.removeItem("aciapa_portal_cliente");
     setCliente(null);
     navigate("/portal/login", { replace: true });
   };
@@ -124,7 +125,7 @@ function AppInner() {
 
   if (!user) return <Login/>;
 
-  const pageLabel={dashboard:"Dashboard",crm:"CRM — Clientes",financeiro:"Financeiro",whatsapp:"WhatsApp",chatia:"Chat com IA",kanban:"Pipeline Kanban",estoque:"Estoque",rh:"RH & Pessoal",email:"E-mail",contabilidade:"Contabilidade",advocacia:"Advocacia",agenda:"Agenda",relatorios:"Relatórios",configuracoes:"Configurações"};
+  const pageLabel={dashboard:"Dashboard",crm:"CRM — Clientes",associados:"Associados",financeiro:"Financeiro",whatsapp:"WhatsApp",chatia:"Chat com IA",kanban:"Pipeline Kanban",estoque:"Estoque",rh:"RH & Pessoal",email:"E-mail",contabilidade:"Contabilidade",advocacia:"Advocacia",agenda:"Agenda",relatorios:"Relatórios",configuracoes:"Configurações"};
 
   return (
     <div style={{background:C.bg,color:C.text,fontFamily:"'DM Sans',sans-serif"}} className="flex h-screen overflow-hidden">
@@ -177,6 +178,7 @@ function AppInner() {
             <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
             <Route path="/dashboard"     element={<Dashboard     stats={stats} reload={loadStats} toast={toast} api={api}/>}/>
             <Route path="/crm"           element={<CRM           toast={toast} api={api} reload={loadStats}/>}/>
+            <Route path="/associados"    element={<Associados    toast={toast} api={api} reload={loadStats}/>}/>
             <Route path="/financeiro"    element={<Financeiro    toast={toast} api={api} reload={loadStats}/>}/>
             <Route path="/whatsapp"      element={<WhatsApp      toast={toast} api={api} waStatus={waStatus}/>}/>
             <Route path="/chatia"        element={<ChatIA        toast={toast} api={api}/>}/>

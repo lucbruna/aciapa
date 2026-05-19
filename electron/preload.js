@@ -1,5 +1,5 @@
 const { contextBridge, ipcRenderer } = require("electron");
-contextBridge.exposeInMainWorld("nexuspro", {
+contextBridge.exposeInMainWorld("aciapa", {
   minimize: ()        => ipcRenderer.invoke("app:minimize"),
   maximize: ()        => ipcRenderer.invoke("app:maximize"),
   close:    ()        => ipcRenderer.invoke("app:close"),

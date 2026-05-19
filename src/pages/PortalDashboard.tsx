@@ -175,7 +175,7 @@ export default function PortalDashboard({ cliente, onLogout }) {
   const [extrato, setExtrato] = useState<any>(null);
   const [payData, setPayData] = useState<any>(null);
   const [mpOk, setMpOk] = useState<any>(null);
-  const token = localStorage.getItem("nexus_portal_token");
+  const token = localStorage.getItem("aciapa_portal_token");
 
   const api = (url, opts: any = {}) =>
     fetch(url, {
@@ -237,7 +237,7 @@ export default function PortalDashboard({ cliente, onLogout }) {
               <Zap size={20} color="white" />
             </div>
             <div>
-              <div style={{ color: C.text }} className="font-extrabold text-lg">NexusPro</div>
+              <div style={{ color: C.text }} className="font-extrabold text-lg">ACIAPA</div>
               <div style={{ color: C.indigo }} className="text-[10px] font-bold uppercase tracking-wider">Portal do Cliente</div>
             </div>
           </div>
@@ -393,7 +393,7 @@ export default function PortalDashboard({ cliente, onLogout }) {
         </div>
 
         <div style={{ color: C.muted, fontSize: 11, textAlign: "center" }}>
-          NexusPro © {new Date().getFullYear()} — Gestão Empresarial Inteligente
+          ACIAPA © {new Date().getFullYear()} — Gestão Empresarial Inteligente
         </div>
       </div>
     </div>

@@ -24,6 +24,7 @@ export default function Sidebar({ page, setPage, stats, waStatus, mobileOpen, on
     {group:"PRINCIPAL"},
     {id:"dashboard",  icon:BarChart3,    label:"Dashboard",     badge:null},
     {id:"crm",        icon:Users,        label:"CRM & Clientes", badge:stats?.atrasados>0?stats.atrasados:null, bc:"red"},
+    {id:"associados", icon:Users,        label:"Associados",     badge:null},
     {id:"kanban",     icon:Layers,       label:"Pipeline Kanban",badge:null},
     {id:"financeiro", icon:DollarSign,   label:"Financeiro",     badge:null},
     {group:"COMUNICAÇÃO"},
@@ -54,7 +55,7 @@ export default function Sidebar({ page, setPage, stats, waStatus, mobileOpen, on
       <aside style={sidebarStyle} className="flex-shrink-0 flex-col transition-all duration-300 z-40 lg:flex lg:relative lg:inset-auto lg:translate-x-0 hidden fixed inset-y-0 left-0">
       <div style={{borderBottom:`1px solid ${C.border}`}} className="h-16 flex items-center px-4 gap-3">
         <div style={{background:`linear-gradient(135deg,${C.indigo},${C.purple})`}} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"><Zap size={18} color="white"/></div>
-        {open&&<div className="flex-1"><div style={{color:C.text}} className="font-extrabold text-[15px] tracking-tight leading-none">NexusPro</div><div style={{color:C.indigo}} className="text-[10px] font-semibold mt-0.5 flex items-center gap-1"><Star size={9}/>Premium · IA</div></div>}
+        {open&&<div className="flex-1"><div style={{color:C.text}} className="font-extrabold text-[15px] tracking-tight leading-none">ACIAPA</div><div style={{color:C.indigo}} className="text-[10px] font-semibold mt-0.5 flex items-center gap-1"><Star size={9}/>Premium · IA</div></div>}
         <button onClick={onToggleMobile} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5" style={{color:C.muted}}><XIcon size={16}/></button>
       </div>
       <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-0.5">

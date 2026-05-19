@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { Zap, Eye, EyeOff, AlertCircle, Sparkles } from "lucide-react";
 export default function Login() {
   const { login } = useAuth();
-  const [email,  setEmail]  = useState("admin@nexuspro.com");
+  const [email,  setEmail]  = useState("admin@aciapa.com");
   const [senha,  setSenha]  = useState("nexus123");
   const [show,   setShow]   = useState(false);
   const [loading,setLoading]= useState(false);
@@ -18,7 +18,7 @@ export default function Login() {
         <div style={{background:"rgba(10,16,32,0.92)",backdropFilter:"blur(20px)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:24,padding:40,boxShadow:"0 32px 80px rgba(0,0,0,0.5)"}}>
           <div style={{textAlign:"center",marginBottom:32}}>
             <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"0 0 48px rgba(99,102,241,0.35)"}}><Zap size={28} color="white"/></div>
-            <h1 style={{color:"#f1f5f9",fontSize:26,fontWeight:800,letterSpacing:-0.5,margin:0}}>NexusPro</h1>
+            <h1 style={{color:"#f1f5f9",fontSize:26,fontWeight:800,letterSpacing:-0.5,margin:0}}>ACIAPA</h1>
             <p style={{color:"#475569",fontSize:11,marginTop:6,letterSpacing:2,textTransform:"uppercase"}}><Sparkles size={10} style={{display:"inline",marginRight:4}}/>Gestão Empresarial Inteligente</p>
           </div>
           <form onSubmit={handleSubmit}>
@@ -35,13 +35,13 @@ export default function Login() {
               </div>
             </div>
             <button type="submit" disabled={loading} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:loading?"rgba(99,102,241,0.5)":"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"white",fontSize:14,fontWeight:800,cursor:loading?"wait":"pointer",boxShadow:loading?"none":"0 0 24px rgba(99,102,241,0.3)",transition:"all 0.2s",fontFamily:"'DM Sans',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-              {loading?<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid white",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>Entrando...</>:"Entrar no NexusPro"}
+              {loading?<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid white",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>Entrando...</>:"Entrar no ACIAPA"}
             </button>
           </form>
           <div style={{marginTop:28,borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:20}}>
             <div style={{color:"#475569",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",textAlign:"center",marginBottom:12}}>Contas de demonstração</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-              {[{l:"Admin",e:"admin@nexuspro.com",c:"#6366f1"},{l:"Financeiro",e:"financeiro@nexuspro.com",c:"#22c55e"},{l:"Atendimento",e:"atendimento@nexuspro.com",c:"#06b6d4"}].map(a=>(
+              {[{l:"Admin",e:"admin@aciapa.com",c:"#6366f1"},{l:"Financeiro",e:"financeiro@aciapa.com",c:"#22c55e"},{l:"Atendimento",e:"atendimento@aciapa.com",c:"#06b6d4"}].map(a=>(
                 <button key={a.l} onClick={()=>{setEmail(a.e);setSenha("nexus123");}} style={{background:`${a.c}12`,border:`1px solid ${a.c}30`,borderRadius:10,padding:"8px 6px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=a.c+"60"} onMouseLeave={e=>e.currentTarget.style.borderColor=a.c+"30"}>
                   <div style={{color:a.c,fontSize:10,fontWeight:800}}>{a.l}</div>
                   <div style={{color:"#475569",fontSize:9,marginTop:2}}>nexus123</div>
@@ -50,7 +50,7 @@ export default function Login() {
             </div>
           </div>
         </div>
-        <p style={{color:"#1e293b",fontSize:11,textAlign:"center",marginTop:16}}>© 2025 NexusPro — Todos os direitos reservados</p>
+        <p style={{color:"#1e293b",fontSize:11,textAlign:"center",marginTop:16}}>© 2025 ACIAPA — Todos os direitos reservados</p>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>

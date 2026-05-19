@@ -281,7 +281,7 @@ export default function Advocacia({ toast, api }) {
     fd.append("processoId", editProcesso?.id || "");
     const r = await fetch("/api/advocacia/upload", {
       method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("nexus_token")}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem("aciapa_token")}` },
       body: fd,
     });
     const d = await r.json();
@@ -296,7 +296,7 @@ export default function Advocacia({ toast, api }) {
 
   const exportarExcel = async () => {
     const r = await fetch("/api/advocacia/export", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("nexus_token")}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem("aciapa_token")}` },
     });
     if (!r.ok) return toast("Erro ao exportar Excel", "error");
     const blob = await r.blob();

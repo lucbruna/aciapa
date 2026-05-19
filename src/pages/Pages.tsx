@@ -446,7 +446,7 @@ export function Relatorios({ toast, api }) {
     const ind:any=[99,102,241],red:any=[244,63,94],green:any=[34,197,94],dark:any=[2,4,8],cyan:any=[6,182,212];
     doc.setFillColor(dark[0],dark[1],dark[2]); doc.rect(0,0,210,42,"F");
     doc.setTextColor(ind[0],ind[1],ind[2]); doc.setFontSize(20); doc.setFont("helvetica","bold");
-    doc.text(dados.empresa?.nomeEmpresa||"NexusPro",14,20);
+    doc.text(dados.empresa?.nomeEmpresa||"ACIAPA",14,20);
     doc.setFontSize(10); doc.setTextColor(180,180,180);
     doc.text(`Relatório ${PASTAS.find(p=>p.id===pasta)?.label||""} — ${MESES[mes]}/${ano}`,14,31);
     doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`,14,39);
@@ -487,7 +487,7 @@ export function Relatorios({ toast, api }) {
       y=doc.lastAutoTable!.finalY+12;
     }
     const pgs=(doc.internal as any).getNumberOfPages();
-    for(let p=1;p<=pgs;p++){doc.setPage(p);doc.setFillColor(dark[0],dark[1],dark[2]); doc.rect(0,282,210,15,"F");doc.setTextColor(100,100,100);doc.setFontSize(7);doc.text(`${dados.empresa?.nomeEmpresa||"NexusPro"} — Relatório ${PASTAS.find(p=>p.id===pasta)?.label} — Pág ${p}/${pgs}`,14,290);}
+    for(let p=1;p<=pgs;p++){doc.setPage(p);doc.setFillColor(dark[0],dark[1],dark[2]); doc.rect(0,282,210,15,"F");doc.setTextColor(100,100,100);doc.setFontSize(7);doc.text(`${dados.empresa?.nomeEmpresa||"ACIAPA"} — Relatório ${PASTAS.find(p=>p.id===pasta)?.label} — Pág ${p}/${pgs}`,14,290);}
     doc.save(`relatorio_${PASTAS.find(p=>p.id===pasta)?.id}_${MESES[mes]}_${ano}.pdf`);
     toast("PDF gerado com sucesso!","success");
     setGerando(false);
@@ -580,7 +580,7 @@ export function Relatorios({ toast, api }) {
             <div><div style={{color:C.text}} className="font-bold text-sm">Importar Planilha</div><div style={{color:C.muted}} className="text-xs">Clientes via arquivo</div></div>
           </div>
           <button onClick={()=>importRef.current?.click()} style={{background:C.purpleDim,border:"1px solid rgba(139,92,246,0.25)",color:C.purple,width:"100%"}} className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold hover:bg-purple-500/20 transition-colors"><Upload size={13}/>Importar Clientes</button>
-          <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={async e=>{const f=e.target.files?.[0];if(!f)return;const fd=new FormData();fd.append("file",f);const r=await fetch("/api/clientes/import",{method:"POST",headers:{Authorization:`Bearer ${localStorage.getItem("nexus_token")}`},body:fd});const d=await r.json();if(d.ok)toast(`${d.importados} clientes importados!`,"success");else toast(d.error||"Erro","error");e.target.value="";}}/>
+          <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={async e=>{const f=e.target.files?.[0];if(!f)return;const fd=new FormData();fd.append("file",f);const r=await fetch("/api/clientes/import",{method:"POST",headers:{Authorization:`Bearer ${localStorage.getItem("aciapa_token")}`},body:fd});const d=await r.json();if(d.ok)toast(`${d.importados} clientes importados!`,"success");else toast(d.error||"Erro","error");e.target.value="";}}/>
           <div style={{color:C.muted,marginTop:12}} className="text-[10px]">Colunas: nome, email, telefone, plano, valor, status</div>
         </div>
       </div>
@@ -768,12 +768,12 @@ function Atualizacoes({ api, toast }) {
   const [versao, setVersao] = useState<any>(null);
   const [info, setInfo] = useState<any>(null);
   const [progresso, setProgresso] = useState<any>(null);
-  const [isElectron, setIsElectron] = useState(!!window.nexuspro?.checkForUpdates);
+  const [isElectron, setIsElectron] = useState(!!window.aciapa?.checkForUpdates);
 
   useEffect(() => {
     api("/api/versao").then(r => r.json()).then(setVersao).catch(() => {});
-    if (window.nexuspro?.onUpdateStatus) {
-      const off = window.nexuspro.onUpdateStatus((...args) => {
+    if (window.aciapa?.onUpdateStatus) {
+      const off = window.aciapa.onUpdateStatus((...args) => {
         if (args[0]?.percent !== undefined) {
           setProgresso(args[0].percent);
         } else if (args[0] === "download-complete" || args.length === 0) {
@@ -790,7 +790,7 @@ function Atualizacoes({ api, toast }) {
   const verificar = async () => {
     setStatus("verificando");
     if (isElectron) {
-      const r = await window.nexuspro?.checkForUpdates?.();
+      const r = await window.aciapa?.checkForUpdates?.();
       if (r?.available) {
         setInfo(r.info);
         setStatus("disponivel");
@@ -811,13 +811,13 @@ function Atualizacoes({ api, toast }) {
 
   const baixar = async () => {
     setStatus("baixando");
-    const r = await window.nexuspro?.downloadUpdate?.();
+    const r = await window.aciapa?.downloadUpdate?.();
     if (r?.downloaded) setStatus("baixado");
     else setStatus("erro");
   };
 
   const instalar = () => {
-    window.nexuspro?.installUpdate?.();
+    window.aciapa?.installUpdate?.();
   };
 
   return (
@@ -836,8 +836,8 @@ function Atualizacoes({ api, toast }) {
         {!isElectron && (
           <div style={{background:C.amberDim,border:"1px solid rgba(245,158,11,0.2)",color:C.sub}} className="rounded-xl p-3 text-xs">
             Você está usando a <strong style={{color:C.amber}}>versão web</strong>. Para receber atualizações automáticas, faça 
-            o download da versão mais recente em <strong style={{color:C.indigo}}>github.com/nexuspro/nexuspro-app/releases</strong> 
-            ou execute o instalador do NexusPro.
+            o download da versão mais recente em <strong style={{color:C.indigo}}>github.com/lucbruna/nexuspro/releases</strong> 
+            ou execute o instalador do ACIAPA.
           </div>
         )}
 
@@ -855,7 +855,7 @@ function Atualizacoes({ api, toast }) {
 
         {status === "atualizado" && (
           <div style={{background:`${C.green}15`,border:`1px solid ${C.green}30`,color:C.green}} className="rounded-xl p-4 text-center text-sm font-bold">
-            ✅ NexusPro está atualizado!
+            ✅ ACIAPA está atualizado!
           </div>
         )}
 

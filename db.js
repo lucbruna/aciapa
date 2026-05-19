@@ -1,5 +1,5 @@
 /**
- * NexusPro — Database Layer (SQLite)
+ * ACIAPA — Database Layer (SQLite)
  * better-sqlite3 com mesma API do JSON anterior
  * Migração automática na primeira execução
  */
@@ -175,7 +175,7 @@ function migrateFromJson(collectionName) {
 class AppDatabase {
   constructor() {
     // Migrar dados existentes
-    const collections = ["users","clientes","transacoes","mensagens","campanhas","kanban","atividades","notificacoes","templates","settings","chat_ia","planilhas","tarefas","produtos","rh","emails","contabilidade","notas_fiscais","advocacia","agenda"];
+    const collections = ["users","clientes","transacoes","mensagens","campanhas","kanban","atividades","notificacoes","templates","settings","chat_ia","planilhas","tarefas","produtos","rh","emails","contabilidade","notas_fiscais","advocacia","agenda","associados"];
     for (const name of collections) migrateFromJson(name);
 
     this.users       = new Collection("users");
@@ -198,6 +198,7 @@ class AppDatabase {
     this.notas_fiscais=new Collection("notas_fiscais");
     this.advocacia   = new Collection("advocacia");
     this.agenda      = new Collection("agenda");
+    this.associados  = new Collection("associados");
 
     this._seed();
   }
@@ -209,12 +210,12 @@ class AppDatabase {
   async _seed() {
     if (this.users.count() === 0) {
       const h = await bcrypt.hash("nexus123", 10);
-      this.users.insert({ nome: "Administrador",     email: "admin@nexuspro.com",        senha: h, role: "super_admin", ativo: true, avatar: "AD", cor: "#6366f1" });
-      this.users.insert({ nome: "João Financeiro",   email: "financeiro@nexuspro.com",   senha: h, role: "financeiro",  ativo: true, avatar: "JF", cor: "#22c55e" });
-      this.users.insert({ nome: "Maria Atendimento", email: "atendimento@nexuspro.com",  senha: h, role: "atendimento", ativo: true, avatar: "MA", cor: "#06b6d4" });
+      this.users.insert({ nome: "Administrador",     email: "admin@aciapa.com",        senha: h, role: "super_admin", ativo: true, avatar: "AD", cor: "#6366f1" });
+      this.users.insert({ nome: "João Financeiro",   email: "financeiro@aciapa.com",   senha: h, role: "financeiro",  ativo: true, avatar: "JF", cor: "#22c55e" });
+      this.users.insert({ nome: "Maria Atendimento", email: "atendimento@aciapa.com",  senha: h, role: "atendimento", ativo: true, avatar: "MA", cor: "#06b6d4" });
     }
     if (this.settings.count() === 0) {
-      this.settings.insert({ key: "empresa", nomeEmpresa: "NexusPro Gestão", cnpj: "00.000.000/0001-00", email: "contato@nexuspro.com", telefone: "11900000000", endereco: "Av. Paulista, 1000 — São Paulo/SP", anthropicKey: "", openaiKey: "", minDelay: 3, maxDelay: 8, whatsappAtivo: false });
+      this.settings.insert({ key: "empresa", nomeEmpresa: "ACIAPA Gestão", cnpj: "00.000.000/0001-00", email: "contato@aciapa.com", telefone: "11900000000", endereco: "Av. Paulista, 1000 — São Paulo/SP", anthropicKey: "", openaiKey: "", minDelay: 3, maxDelay: 8, whatsappAtivo: false });
     }
     if (this.clientes.count() === 0) {
       const hoje = new Date();
@@ -273,9 +274,9 @@ class AppDatabase {
     }
     if (this.rh.count() === 0) {
       [
-        { nome: "Ana Silva", cargo: "Analista Financeiro", departamento: "Financeiro", salario: 5200, admissao: "2024-03-15", telefone: "11988887777", email: "ana@nexuspro.com", documentos: "CPF,RG" },
-        { nome: "Carlos Oliveira", cargo: "Desenvolvedor", departamento: "TI", salario: 7800, admissao: "2024-01-10", telefone: "11977776666", email: "carlos@nexuspro.com", documentos: "CPF,RG,CNH" },
-        { nome: "Mariana Costa", cargo: "Analista de RH", departamento: "RH", salario: 4800, admissao: "2024-06-01", telefone: "11966665555", email: "mariana@nexuspro.com", documentos: "CPF,RG" },
+        { nome: "Ana Silva", cargo: "Analista Financeiro", departamento: "Financeiro", salario: 5200, admissao: "2024-03-15", telefone: "11988887777", email: "ana@aciapa.com", documentos: "CPF,RG" },
+        { nome: "Carlos Oliveira", cargo: "Desenvolvedor", departamento: "TI", salario: 7800, admissao: "2024-01-10", telefone: "11977776666", email: "carlos@aciapa.com", documentos: "CPF,RG,CNH" },
+        { nome: "Mariana Costa", cargo: "Analista de RH", departamento: "RH", salario: 4800, admissao: "2024-06-01", telefone: "11966665555", email: "mariana@aciapa.com", documentos: "CPF,RG" },
       ].forEach(f => this.rh.insert(f));
     }
     if (this.contabilidade.count() === 0) {

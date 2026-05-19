@@ -46,7 +46,7 @@ const ThemeContext = createContext<ThemeValue>(null!);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem("nexus_theme");
+    const saved = localStorage.getItem("aciapa_theme");
     const dark = saved !== "light";
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     return dark;
@@ -56,7 +56,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     const next = !isDark;
     document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-    localStorage.setItem("nexus_theme", next ? "dark" : "light");
+    localStorage.setItem("aciapa_theme", next ? "dark" : "light");
     setIsDark(next);
   };
 

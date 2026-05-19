@@ -30,7 +30,7 @@ export default function Email({ toast, api }) {
 
   const sendEmail = async (form) => {
     if (!form.para || !form.assunto) return toast("Destinatário e assunto obrigatórios", "error");
-    await api("/api/emails", { method: "POST", body: JSON.stringify({ ...form, pasta: "enviados", de: "eu@nexuspro.com", lido: true }) });
+    await api("/api/emails", { method: "POST", body: JSON.stringify({ ...form, pasta: "enviados", de: "eu@aciapa.com", lido: true }) });
     toast("E-mail enviado!", "success");
     setShowCompose(false);
     if (pasta === "enviados") load();

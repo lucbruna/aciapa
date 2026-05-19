@@ -13,7 +13,7 @@ const AuthContext = createContext<AuthValue>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user,   setUser]   = useState<any>(null);
-  const [token,  setToken]  = useState(localStorage.getItem("nexus_token")||null);
+  const [token,  setToken]  = useState(localStorage.getItem("aciapa_token")||null);
   const [loading,setLoading]= useState(true);
   useEffect(()=>{
     if (token) {
@@ -24,9 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login=async(email:string,senha:string)=>{
     const r=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,senha})});
     const d=await r.json(); if(!r.ok) throw new Error(d.error||"Erro ao fazer login");
-    localStorage.setItem("nexus_token",d.token); setToken(d.token); setUser(d.user); return d;
+    localStorage.setItem("aciapa_token",d.token); setToken(d.token); setUser(d.user); return d;
   };
-  const logout=()=>{ localStorage.removeItem("nexus_token"); setToken(null); setUser(null); };
+  const logout=()=>{ localStorage.removeItem("aciapa_token"); setToken(null); setUser(null); };
   const can=(...roles:string[])=>{ if(!user) return false; if(user.role==="super_admin") return true; return roles.includes(user.role); };
   return <AuthContext.Provider value={{user,token,loading,login,logout,can}}>{children}</AuthContext.Provider>;
 }

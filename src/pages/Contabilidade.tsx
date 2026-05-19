@@ -77,7 +77,7 @@ export default function Contabilidade({ toast, api }) {
     doc.setFillColor(255, 255, 255); doc.rect(8, 8, 194, 281, "F");
     doc.setDrawColor(line[0],line[1],line[2]); doc.rect(10, 10, 190, 24);
     doc.setFont("helvetica", "bold"); doc.setTextColor(dark[0],dark[1],dark[2]); doc.setFontSize(15);
-    doc.text(nf.emitente || "NexusPro Gestao", 14, 19);
+    doc.text(nf.emitente || "ACIAPA Gestao", 14, 19);
     doc.setFontSize(7.5); doc.setFont("helvetica", "normal"); doc.setTextColor(gray[0],gray[1],gray[2]);
     doc.text(`CNPJ: ${nf.emitenteCnpj || "-"}  IE: ISENTO`, 14, 25);
     doc.text(nf.emitenteEndereco || "Endereco nao informado", 14, 30, { maxWidth: 110 });
@@ -128,7 +128,7 @@ export default function Contabilidade({ toast, api }) {
     doc.setDrawColor(green[0],green[1],green[2]); doc.setTextColor(green[0],green[1],green[2]); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
     doc.text("NF-e AUTORIZADA", 156, 208);
     doc.setFontSize(7); doc.text("Modelo visual padrao Brasil para controle interno.", 139, 216);
-    addBox(10, 244, 190, 24, "INFORMACOES COMPLEMENTARES", "Documento gerado pelo NexusPro. Emissao fiscal real depende de certificado digital, autorizacao SEFAZ/prefeitura e configuracao tributaria do emitente.", 7.5);
+    addBox(10, 244, 190, 24, "INFORMACOES COMPLEMENTARES", "Documento gerado pelo ACIAPA. Emissao fiscal real depende de certificado digital, autorizacao SEFAZ/prefeitura e configuracao tributaria do emitente.", 7.5);
     doc.save(`danfe_nfe_${nf.numero || Date.now()}.pdf`);
     toast("DANFE com QR Code gerado", "success");
   };
