@@ -3,8 +3,8 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { Zap, Eye, EyeOff, AlertCircle, Sparkles } from "lucide-react";
 export default function Login() {
   const { login } = useAuth();
-  const [email,  setEmail]  = useState("admin@aciapa.com");
-  const [senha,  setSenha]  = useState("nexus123");
+  const [email,  setEmail]  = useState("");
+  const [senha,  setSenha]  = useState("");
   const [show,   setShow]   = useState(false);
   const [loading,setLoading]= useState(false);
   const [error,  setError]  = useState("");
@@ -38,17 +38,6 @@ export default function Login() {
               {loading?<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid white",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>Entrando...</>:"Entrar no ACIAPA"}
             </button>
           </form>
-          <div style={{marginTop:28,borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:20}}>
-            <div style={{color:"#475569",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",textAlign:"center",marginBottom:12}}>Contas de demonstração</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-              {[{l:"Admin",e:"admin@aciapa.com",c:"#6366f1"},{l:"Financeiro",e:"financeiro@aciapa.com",c:"#22c55e"},{l:"Atendimento",e:"atendimento@aciapa.com",c:"#06b6d4"}].map(a=>(
-                <button key={a.l} onClick={()=>{setEmail(a.e);setSenha("nexus123");}} style={{background:`${a.c}12`,border:`1px solid ${a.c}30`,borderRadius:10,padding:"8px 6px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=a.c+"60"} onMouseLeave={e=>e.currentTarget.style.borderColor=a.c+"30"}>
-                  <div style={{color:a.c,fontSize:10,fontWeight:800}}>{a.l}</div>
-                  <div style={{color:"#475569",fontSize:9,marginTop:2}}>nexus123</div>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
         <p style={{color:"#1e293b",fontSize:11,textAlign:"center",marginTop:16}}>© 2025 ACIAPA — Todos os direitos reservados</p>
       </div>
