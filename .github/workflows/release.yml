@@ -26,15 +26,13 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Debug electron-builder version
-        run: npx electron-builder --version
-
       - name: Package Electron app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win nsis --x64 2>&1
+        shell: cmd
+        run: npx electron-builder --win nsis --x64
 
-      - name: List dist-electron
+      - name: List dist-electron output
         if: success() || failure()
         run: Get-ChildItem dist-electron -Name
 
