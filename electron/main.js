@@ -6,14 +6,39 @@ const http   = require("http");
 
 let mainWindow = null, tray = null, serverProc = null;
 const PORT = 3001;
+const MAX_WAIT = 30; // segundos máximos de espera pelo servidor
 
 function startServer() {
   return new Promise(resolve => {
-    const entry = path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, ".."), "server.js");
+    let entry;
+    if (app.isPackaged) {
+      // Electron-builder extrai asarUnpack para app.asar.unpacked
+      entry = path.join(process.resourcesPath, "app.asar.unpacked", "server.js");
+    } else {
+      entry = path.join(__dirname, "..", "server.js");
+    }
+    // Fallback: tenta direto no resourcesPath se o caminho acima falhar
+    if (app.isPackaged && !require("fs").existsSync(entry)) {
+      entry = path.join(process.resourcesPath, "server.js");
+    }
     serverProc  = fork(entry, [], { silent:true, env:{ ...process.env, PORT } });
-    serverProc.stdout?.on("data", d => { if (d.toString().includes("ACIAPA")) resolve(); });
-    serverProc.stderr?.on("data", d => console.error("[srv]", d.toString()));
-    setTimeout(resolve, 8000);
+    serverProc.stdout?.on("data", d => {
+      const s = d.toString();
+      console.log("[ACIAPA]", s.trim());
+      if (s.includes("ACIAPA")) resolve();
+    });
+    serverProc.stderr?.on("data", d => {
+      const s = d.toString().trim();
+      if (s) console.error("[srv]", s);
+    });
+    serverProc.on("error", e => {
+      console.error("[srv] fork error:", e.message);
+      resolve(); // resolve mesmo com erro para tentar abrir a janela
+    });
+    serverProc.on("exit", code => {
+      if (code !== 0 && code !== null) console.error("[srv] exit code:", code);
+    });
+    setTimeout(resolve, 10000);
   });
 }
 
@@ -27,6 +52,13 @@ function waitForServer(n=35) {
     };
     check(n);
   });
+}
+
+function forceShowWindow() {
+  if (mainWindow && !mainWindow.isVisible()) {
+    console.log("[ACIAPA] Forçando exibição da janela por timeout");
+    mainWindow.show();
+  }
 }
 
 function createWindow() {
@@ -45,9 +77,26 @@ function createWindow() {
     },
     show: false,
   });
-  mainWindow.loadURL(`http://localhost:${PORT}`);
-  mainWindow.once("ready-to-show", () => mainWindow.show());
-  mainWindow.on("close", e => { if (!app.isQuiting) { e.preventDefault(); mainWindow.hide(); } });
+
+  mainWindow.loadURL(`http://localhost:${PORT}`).catch(err => {
+    console.error("[ACIAPA] loadURL error:", err);
+  });
+
+  mainWindow.webContents.on("did-fail-load", (_, code, desc) => {
+    console.error(`[ACIAPA] did-fail-load: ${code} ${desc}`);
+  });
+
+  mainWindow.once("ready-to-show", () => {
+    console.log("[ACIAPA] ready-to-show, exibindo janela");
+    mainWindow.show();
+  });
+
+  // Fallback: se ready-to-show não disparar em 15s, força exibição
+  setTimeout(forceShowWindow, 15000);
+
+  mainWindow.on("close", e => {
+    if (!app.isQuiting) { e.preventDefault(); mainWindow.hide(); }
+  });
   mainWindow.on("closed", () => { mainWindow = null; });
 }
 
