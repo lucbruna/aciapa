@@ -16,6 +16,9 @@ p{color:#94a3b8;text-align:center;max-width:400px;line-height:1.6}
 .error-icon{width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:28px}
 .error h2{color:#ef4444;-webkit-text-fill-color:#ef4444}
 .error p{color:#94a3b8;font-size:.875rem;max-width:500px}
+.diag{display:none;margin-top:12px;width:100%;max-width:600px}
+.diag summary{cursor:pointer;color:#64748b;font-size:.8rem;padding:8px;border-radius:6px;background:rgba(255,255,255,.03)}
+.diag pre{background:#0a0e14;color:#e2e8f0;font-size:.75rem;padding:12px;border-radius:6px;max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin-top:6px;border:1px solid rgba(255,255,255,.06)}
 .btn{padding:10px 24px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:.875rem;font-weight:500;cursor:pointer;transition:background .2s}
 .btn:hover{background:#4f46e5}
 .btn.secondary{background:#1e293b;color:#e2e8f0}
@@ -40,6 +43,12 @@ p{color:#94a3b8;text-align:center;max-width:400px;line-height:1.6}
   <div class="actions">
     <button class="btn" onclick="location.reload()">Tentar novamente</button>
   </div>
+</div>
+<div class="diag" id="diag">
+  <details>
+    <summary>📋 Ver diagnóstico do servidor</summary>
+    <pre id="diagLog">Carregando...</pre>
+  </details>
 </div>
 <script>
 (function() {
@@ -87,6 +96,15 @@ p{color:#94a3b8;text-align:center;max-width:400px;line-height:1.6}
     statusEl.style.display = "none";
     document.getElementById("errorMsg").textContent = msg;
     errorEl.style.display = "flex";
+    // Carrega diagnostico do servidor
+    if (window.aciapa && window.aciapa.getServerLog) {
+      window.aciapa.getServerLog().then(function(log) {
+        if (log && log.length > 0) {
+          document.getElementById("diagLog").textContent = log;
+          document.getElementById("diag").style.display = "block";
+        }
+      });
+    }
   }
 
   window.addEventListener("load", function() {

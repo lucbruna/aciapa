@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("aciapa", {
   openUrl:  url       => ipcRenderer.invoke("app:open-url", url),
   version:  ()        => ipcRenderer.invoke("app:version"),
   checkServer: ()     => ipcRenderer.invoke("server:check"),
+  getServerLog: ()    => ipcRenderer.invoke("server:log"),
   redirectToApp: ()   => ipcRenderer.send("server:redirect"),
   checkForUpdates: () => ipcRenderer.invoke("update:check").catch(()=>({available:false})),
   downloadUpdate: ()  => ipcRenderer.invoke("update:download").catch(()=>({downloaded:false})),

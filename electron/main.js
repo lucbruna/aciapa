@@ -5,8 +5,9 @@ const { fork } = require("child_process");
 const http   = require("http");
 
 let mainWindow = null, tray = null, serverProc = null;
+let serverLog = []; // armazena logs do servidor para diagnostico
 const PORT = 3001;
-const MAX_WAIT = 30; // segundos máximos de espera pelo servidor
+const MAX_WAIT = 30;
 
 function resolvePath(relativePath) {
   if (app.isPackaged) {
@@ -17,9 +18,43 @@ function resolvePath(relativePath) {
   return path.join(__dirname, "..", relativePath);
 }
 
+function log(line) {
+  serverLog.push(line);
+  if (serverLog.length > 200) serverLog.splice(0, 50);
+  console.log("[ACIAPA]", line);
+}
+
+function logErr(line) {
+  serverLog.push("[ERRO] " + line);
+  if (serverLog.length > 200) serverLog.splice(0, 50);
+  console.error("[srv]", line);
+}
+
 function startServer() {
   return new Promise(resolve => {
+    // Tenta carregar in-process primeiro (captura erro exato do require)
+    try {
+      const entry = resolvePath("server.js");
+      // Limpa cache do modulo para evitar estado residual
+      delete require.cache[require.resolve(entry)];
+      // Define NODE_PATH para o processo atual tambem
+      if (app.isPackaged) {
+        const asarNM = path.join(process.resourcesPath, "app.asar", "node_modules");
+        process.env.NODE_PATH = asarNM + (process.env.NODE_PATH ? ";" + process.env.NODE_PATH : "");
+        require("module").Module._initPaths();
+      }
+      require(entry);
+      log("Servidor carregado in-process com sucesso");
+      resolve();
+      return;
+    } catch (e) {
+      logErr("In-process falhou: " + e.message + "\n" + e.stack);
+      // Continua para tentar via fork como fallback
+    }
+
+    // Fallback: fork
     const entry = resolvePath("server.js");
+    log("Iniciando servidor via fork: " + entry);
     const asarNodeModules = path.join(process.resourcesPath, "app.asar", "node_modules");
     serverProc  = fork(entry, [], { 
       silent: true, 
@@ -30,20 +65,19 @@ function startServer() {
       } 
     });
     serverProc.stdout?.on("data", d => {
-      const s = d.toString();
-      console.log("[ACIAPA]", s.trim());
-      if (s.includes("ACIAPA")) resolve();
+      const s = d.toString().trim();
+      if (s) { log(s); if (s.includes("ACIAPA")) resolve(); }
     });
     serverProc.stderr?.on("data", d => {
       const s = d.toString().trim();
-      if (s) console.error("[srv]", s);
+      if (s) logErr(s);
     });
     serverProc.on("error", e => {
-      console.error("[srv] fork error:", e.message);
-      resolve(); // resolve mesmo com erro para tentar abrir a janela
+      logErr("fork error: " + e.message);
+      resolve();
     });
     serverProc.on("exit", code => {
-      if (code !== 0 && code !== null) console.error("[srv] exit code:", code);
+      if (code !== 0 && code !== null) logErr("exit code: " + code);
     });
     setTimeout(resolve, 10000);
   });
@@ -79,7 +113,7 @@ function createWindow() {
   });
 
   // Carrega página de loading local (não depende do servidor HTTP)
-  mainWindow.loadFile(path.join(__dirname, "loading.html"));
+  mainWindow.loadFile(resolvePath("electron/loading.html"));
 
   mainWindow.on("close", e => {
     if (!app.isQuiting) { e.preventDefault(); mainWindow.hide(); }
@@ -131,6 +165,11 @@ ipcMain.handle("server:check", async () => {
   } catch {
     return { ok: false };
   }
+});
+
+// Retorna logs de diagnostico do servidor
+ipcMain.handle("server:log", () => {
+  return serverLog.slice(-100).join("\n");
 });
 
 ipcMain.on("server:redirect", () => {
