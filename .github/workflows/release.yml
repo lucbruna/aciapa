@@ -17,6 +17,10 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Create required directories
+        run: |
+          New-Item -ItemType Directory -Force -Path data, uploads, auth_info | Out-Null
+
       - name: Install deps (skip broken install scripts)
         run: npm ci --ignore-scripts
 
@@ -29,8 +33,7 @@ jobs:
       - name: Package Electron app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: cmd
-        run: npx electron-builder --win nsis --x64
+        run: node node_modules/electron-builder/cli.js --win nsis --x64
 
       - name: List dist-electron output
         if: success() || failure()
