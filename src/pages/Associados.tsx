@@ -13,13 +13,15 @@ export default function Associados({ toast, api, reload }) {
   const [search, setSearch] = useState("");
   const searchDeb = useDebounce(search);
   const [fSt,    setFSt]    = useState("todos");
+  const [fSit,   setFSit]   = useState("todos");
   const [selected,setSelected]=useState<any[]>([]);
   const [editM,  setEditM]  = useState<any>(null);
   const [detM,   setDetM]   = useState<any>(null);
   const [impM,   setImpM]   = useState(false);
+  const [tab,    setTab]    = useState("geral");
 
-  const load=async()=>{ setLoading(true); const p=new URLSearchParams(); if(fSt!=="todos") p.set("status",fSt); if(searchDeb) p.set("search",searchDeb); setList(await api(`/api/associados?${p}`).then(r=>r.json())); setLoading(false); };
-  useEffect(()=>{ load(); },[fSt,searchDeb]);
+  const load=async()=>{ setLoading(true); const p=new URLSearchParams(); if(fSt!=="todos") p.set("status",fSt); if(fSit!=="todos") p.set("situacao",fSit); if(searchDeb) p.set("search",searchDeb); setList(await api(`/api/associados?${p}`).then(r=>r.json())); setLoading(false); };
+  useEffect(()=>{ load(); },[fSt,fSit,searchDeb]);
 
   const del=async id=>{ if(!confirm("Excluir?")) return; await api(`/api/associados/${id}`,{method:"DELETE"}); toast("Excluído","info"); load(); reload(); };
 
@@ -34,7 +36,9 @@ export default function Associados({ toast, api, reload }) {
   };
 
   const ST=[["todos","Todos"],["ativo","Ativos"],["inativo","Inativos"]];
+  const SIT=[["todos","Todos",C.muted],["em_dia","Em Dia",C.green],["atrasado","Atrasados",C.red],["vencendo","Vencendo",C.amber],["a_vencer","A Vencer",C.cyan]];
   const total=list.length, ativos=list.filter(a=>a.status==="ativo").length, inativos=list.filter(a=>a.status==="inativo").length;
+  const TABS=[["geral","Geral"],["pagamento","Pagamento"],["plano","Plano"]];
 
   return (
     <div className="space-y-4">
@@ -57,6 +61,15 @@ export default function Associados({ toast, api, reload }) {
         ))}
       </div>
 
+      <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-1 flex gap-1">
+        {TABS.map(([k,l])=>(
+          <button key={k} onClick={()=>setTab(k)}
+            style={{background:tab===k?C.indigoDim:"transparent",color:tab===k?C.indigo:C.muted,border:`1px solid ${tab===k?C.indigoBorder:"transparent"}`}}
+            className="flex-1 py-2 rounded-xl text-xs font-bold transition-all">{l}</button>
+        ))}
+      </div>
+
+      {tab==="geral"&&<>
       <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-4 flex gap-3 flex-wrap items-center">
         <div className="flex-1 min-w-48 flex items-center gap-2" style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"0 12px"}}>
           <Search size={14} style={{color:C.muted}}/>
@@ -64,6 +77,7 @@ export default function Associados({ toast, api, reload }) {
           {search&&<button onClick={()=>setSearch("")}><X size={13} style={{color:C.muted}}/></button>}
         </div>
         <div className="flex gap-1">{ST.map(([k,l])=><button key={k} onClick={()=>setFSt(k)} style={{background:fSt===k?C.indigoDim:"transparent",color:fSt===k?C.indigo:C.muted,border:`1px solid ${fSt===k?C.indigoBorder:C.border}`}} className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">{l}</button>)}</div>
+        <div className="flex gap-1 flex-wrap">{SIT.map(([k,l,c])=><button key={k} onClick={()=>setFSit(k)} style={{background:fSit===k?`${c}15`:"transparent",color:fSit===k?c:C.muted,border:`1px solid ${fSit===k?`${c}35`:C.border}`}} className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">{l}</button>)}</div>
       </div>
 
       {selected.length>0&&<div style={{background:C.indigoDim,border:`1px solid ${C.indigoBorder}`}} className="flex items-center gap-3 rounded-xl px-4 py-2.5"><span style={{color:C.indigo}} className="text-xs font-bold">{selected.length} selecionados</span><button onClick={()=>setSelected([])} style={{color:C.muted,marginLeft:"auto"}} className="text-xs hover:underline">Limpar</button></div>}
@@ -117,6 +131,19 @@ export default function Associados({ toast, api, reload }) {
           </label>
         </div>
       </Modal>
+      </>}
+
+      {tab==="pagamento"&&(
+        <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-8 text-center">
+          <div style={{color:C.muted}} className="text-sm">Gestão de pagamentos dos associados</div>
+        </div>
+      )}
+
+      {tab==="plano"&&(
+        <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-8 text-center">
+          <div style={{color:C.muted}} className="text-sm">Planos disponíveis para associados</div>
+        </div>
+      )}
     </div>
   );
 }

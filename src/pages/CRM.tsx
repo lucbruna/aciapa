@@ -22,6 +22,7 @@ export default function CRM({ toast, api, reload }) {
   const [detM,   setDetM]   = useState<any>(null);
   const [pagM,   setPagM]   = useState<any>(null);
   const [impM,   setImpM]   = useState(false);
+  const [tab,    setTab]    = useState("geral");
 
   const load=async()=>{ setLoading(true); const p=new URLSearchParams(); if(fSt!=="todos") p.set("status",fSt); if(fSit!=="todos") p.set("situacao",fSit); if(searchDeb) p.set("search",searchDeb); setList(await api(`/api/clientes?${p}`).then(r=>r.json())); setLoading(false); };
   useEffect(()=>{ load(); },[fSt,fSit,searchDeb]);
@@ -42,6 +43,7 @@ export default function CRM({ toast, api, reload }) {
   const SIT=[["todos","Todos",C.muted],["em_dia","Em Dia",C.green],["atrasado","Atrasados",C.red],["vencendo","Vencendo",C.amber],["a_vencer","A Vencer",C.cyan]];
   const ST=[["todos","Todos"],["ativo","Ativos"],["inativo","Inativos"]];
   const total=list.length, ativos=list.filter(c=>c.status==="ativo").length, atrasados=list.filter(c=>c._situacao==="atrasado").length, recMes=list.filter(c=>c._situacao==="em_dia").reduce((s,c)=>s+c.valor,0);
+  const TABS=[["geral","Geral"],["pagamento","Pagamento"],["plano","Plano"]];
 
   return (
     <div className="space-y-4">
@@ -64,6 +66,15 @@ export default function CRM({ toast, api, reload }) {
         ))}
       </div>
 
+      <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-1 flex gap-1">
+        {TABS.map(([k,l])=>(
+          <button key={k} onClick={()=>setTab(k)}
+            style={{background:tab===k?C.indigoDim:"transparent",color:tab===k?C.indigo:C.muted,border:`1px solid ${tab===k?C.indigoBorder:"transparent"}`}}
+            className="flex-1 py-2 rounded-xl text-xs font-bold transition-all">{l}</button>
+        ))}
+      </div>
+
+      {tab==="geral"&&<>
       <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-4 flex gap-3 flex-wrap items-center">
         <div className="flex-1 min-w-48 flex items-center gap-2" style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"0 12px"}}>
           <Search size={14} style={{color:C.muted}}/>
@@ -138,6 +149,19 @@ export default function CRM({ toast, api, reload }) {
           </label>
         </div>
       </Modal>
+      </>}
+
+      {tab==="pagamento"&&(
+        <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-8 text-center">
+          <div style={{color:C.muted}} className="text-sm">Gestão de pagamentos dos clientes</div>
+        </div>
+      )}
+
+      {tab==="plano"&&(
+        <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl p-8 text-center">
+          <div style={{color:C.muted}} className="text-sm">Planos disponíveis para clientes</div>
+        </div>
+      )}
     </div>
   );
 }

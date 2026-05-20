@@ -32,6 +32,7 @@
     "qrcode": "^1.5.3",
     "react-router-dom": "^7.15.1",
     "socket.io": "^4.7.2",
+    "svg2icon": "^1.2.4",
     "xlsx": "^0.18.5"
   },
   "optionalDependencies": {
