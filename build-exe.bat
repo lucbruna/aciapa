@@ -51,11 +51,21 @@ echo  [PKG] Compilando frontend...
 call npm run build
 if %errorlevel% neq 0 ( echo  [ERRO] Build falhou! & exit /b 1 )
 if not exist "dist-exe\" mkdir dist-exe
+echo  [PKG] Recompilando better-sqlite3 para Node 18...
+cd node_modules\better-sqlite3
+npx node-gyp rebuild --target=18.5.0 --arch=x64 --dist-url=https://nodejs.org/dist
+if %errorlevel% neq 0 ( echo  [AVISO] Recompilacao falhou, tentando continuar... )
+cd ..\..
 echo  [PKG] Empacotando servidor...
-pkg server.js --targets node18-win-x64 --output dist-exe\nexuspro.exe --compress GZip
+pkg server.js --targets node18-win-x64 --output dist-exe\aciapa.exe --compress GZip
 if %errorlevel% neq 0 ( echo  [ERRO] PKG falhou! & exit /b 1 )
-echo  [OK] dist-exe\nexuspro.exe gerado!
-echo  IMPORTANTE: copie a pasta dist\ e data\ junto com o .exe
+echo  [PKG] Copiando assets necessarios...
+if not exist "dist-exe\dist" mkdir dist-exe\dist
+xcopy /E /I /Y dist dist-exe\dist
+if not exist "dist-exe\node_modules" mkdir dist-exe\node_modules
+xcopy /E /I /Y node_modules\better-sqlite3 dist-exe\node_modules\better-sqlite3
+echo  [OK] dist-exe\aciapa.exe gerado!
+echo  [OK] dist\ e modulo nativo copiados
 goto :EOF
 
 :SUCCESS

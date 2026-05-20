@@ -9,7 +9,7 @@ const PORT = 3001;
 
 function startServer() {
   return new Promise(resolve => {
-    const entry = path.join(app.isPackaged ? process.resourcesPath : __dirname, "..", "server.js");
+    const entry = path.join(app.isPackaged ? process.resourcesPath : path.join(__dirname, ".."), "server.js");
     serverProc  = fork(entry, [], { silent:true, env:{ ...process.env, PORT } });
     serverProc.stdout?.on("data", d => { if (d.toString().includes("ACIAPA")) resolve(); });
     serverProc.stderr?.on("data", d => console.error("[srv]", d.toString()));

@@ -17,8 +17,11 @@ const path      = require("path");
 const fs        = require("fs");
 const qrcode    = require("qrcode");
 const rateLimit = require("express-rate-limit");
-const archiver  = require("archiver");
+const nodemailer= require("nodemailer");
 const db        = require("./db");
+
+const isPkg = typeof process.pkg !== "undefined";
+const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
 
 const app    = express();
 const server = http.createServer(app);
@@ -27,6 +30,7 @@ const io     = new Server(server, { cors:{ origin:"*" } });
 app.use(cors());
 app.use(express.json({ limit:"50mb" }));
 app.use(express.static(path.join(__dirname,"dist")));
+if (isPkg) app.use(express.static(path.join(basePath,"dist")));
 
 const upload     = multer({ dest:"uploads/", limits:{ fileSize:50*1024*1024 } });
 const JWT_SECRET = process.env.JWT_SECRET || "aciapa_jwt_2025_fallback_key";
@@ -422,6 +426,31 @@ app.get("/api/advocacia/export", auth(), (_,res)=>{
 app.get("/api/settings", auth(), (_,res)=>{ const s={...db.settings.findOne({key:"empresa"})||{}}; if(s.anthropicKey) s.anthropicKey="***"; if(s.openaiKey) s.openaiKey="***"; res.json(s); });
 app.put("/api/settings", auth(["super_admin","admin"]), (req,res)=>{ const cur=db.settings.findOne({key:"empresa"}); const upd={...req.body}; if(upd.anthropicKey==="***") delete upd.anthropicKey; if(upd.openaiKey==="***") delete upd.openaiKey; if(cur) db.settings.update(cur.id,upd); else db.settings.insert({key:"empresa",...upd}); res.json({ok:true}); });
 
+// SMTP CONFIG
+app.get("/api/smtp-config", auth(), (_,res)=>{
+  const cfg=db.settings.findOne({key:"smtp"})||{};
+  if(cfg.senha) cfg.senha="***";
+  res.json(cfg);
+});
+app.put("/api/smtp-config", auth(["super_admin","admin"]), (req,res)=>{
+  const cur=db.settings.findOne({key:"smtp"});
+  const upd={...req.body};
+  if(upd.senha==="***") delete upd.senha;
+  if(cur) db.settings.update(cur.id,{...upd,key:"smtp"});
+  else db.settings.insert({key:"smtp",...upd});
+  res.json({ok:true});
+});
+app.post("/api/smtp-test", auth(["super_admin","admin"]), async(req,res)=>{
+  try {
+    const cfg=req.body;
+    const transporter=nodemailer.createTransport({host:cfg.host,port:parseInt(cfg.port)||587,secure:!!cfg.secure,auth:{user:cfg.usuario,pass:cfg.senha}});
+    await transporter.verify();
+    res.json({ok:true,mensagem:"Conexão SMTP bem-sucedida!"});
+  } catch(e){
+    res.status(400).json({error:"Falha na conexão SMTP: "+e.message});
+  }
+});
+
 // NOTIFICATIONS
 app.get("/api/notificacoes",          auth(), (req,res)=>res.json(db.notificacoes.find({userId:req.user.id}).slice(0,20)));
 app.delete("/api/notificacoes",       auth(), (req,res)=>{ db.notificacoes.deleteMany({userId:req.user.id}); res.json({ok:true}); });
@@ -467,10 +496,40 @@ app.get("/api/emails", auth(), (req,res)=>{
   if(search){const q=search.toLowerCase();list=list.filter(e=>e.assunto.toLowerCase().includes(q)||e.de.includes(q)||e.para.includes(q));}
   res.json(list);
 });
-app.post("/api/emails", auth(), (req,res)=>{const e=db.emails.insert({...req.body,data:new Date().toISOString(),lido:false});res.json({ok:true,email:e});});
+app.post("/api/emails", auth(), async(req,res)=>{
+  const email=db.emails.insert({...req.body,data:new Date().toISOString(),lido:false});
+  // Tenta enviar via SMTP real
+  try {
+    const smtp=db.settings.findOne({key:"smtp"});
+    if(smtp&&smtp.host&&smtp.usuario&&smtp.senha&&smtp.senha!=="***"){
+      const transporter=nodemailer.createTransport({host:smtp.host,port:parseInt(smtp.port)||587,secure:!!smtp.secure,auth:{user:smtp.usuario,pass:smtp.senha}});
+      await transporter.sendMail({from:smtp.remetente||smtp.usuario,to:req.body.para,subject:req.body.assunto,text:req.body.corpo||""});
+      console.log("[EMAIL] Enviado via SMTP para",req.body.para);
+    }
+  } catch(e){ console.error("[EMAIL] Falha ao enviar via SMTP:",e.message); }
+  res.json({ok:true,email});
+});
 app.put("/api/emails/:id", auth(), (req,res)=>{const e=db.emails.update(req.params.id,req.body);res.json({ok:true,email:e});});
 app.delete("/api/emails/:id", auth(), (req,res)=>{db.emails.delete(req.params.id);res.json({ok:true});});
 app.get("/api/emails/nao-lidos", auth(), (_,res)=>res.json({total:db.emails.find({lido:false}).length}));
+
+// EMAIL SUBSCRIBERS (newsletter/cadastro para recebimento)
+app.get("/api/email-subscribers", auth(), (req,res)=>{
+  const {search}=req.query;
+  let list=db.email_subscribers.all.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  if(search){const q=search.toLowerCase();list=list.filter(s=>s.email.toLowerCase().includes(q)||(s.nome||"").toLowerCase().includes(q));}
+  res.json(list);
+});
+app.post("/api/email-subscribers", (req,res)=>{
+  const {email,nome}=req.body;
+  if(!email) return res.status(400).json({error:"E-mail obrigatório"});
+  if(db.email_subscribers.findOne({email})) return res.status(400).json({error:"E-mail já cadastrado"});
+  const s=db.email_subscribers.insert({email,nome:nome||"",ativo:true,dataCadastro:new Date().toISOString(),origem:req.body.origem||"sistema"});
+  res.json({ok:true,subscriber:s});
+});
+app.put("/api/email-subscribers/:id", auth(), (req,res)=>{const s=db.email_subscribers.update(req.params.id,req.body);res.json({ok:true,subscriber:s});});
+app.delete("/api/email-subscribers/:id", auth(), (req,res)=>{db.email_subscribers.delete(req.params.id);res.json({ok:true});});
+app.get("/api/email-subscribers/count", auth(), (_,res)=>res.json({total:db.email_subscribers.count(),ativos:db.email_subscribers.find({ativo:true}).length}));
 
 // ── CONTABILIDADE ─────────────────────────────────────────────────────────────
 app.get("/api/contabilidade", auth(), (req,res)=>{
@@ -876,10 +935,11 @@ app.get("/api/admin/backup", auth(["super_admin"]), async (req, res) => {
   const dirs = ["data", "uploads", "auth_info"];
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", `attachment; filename="aciapa_backup_${new Date().toISOString().slice(0,10)}.zip"`);
+  const archiver = require("archiver");
   const archive = archiver("zip", { zlib: { level: 6 } });
   archive.pipe(res);
   for (const d of dirs) {
-    const p = path.join(__dirname, d);
+    const p = path.join(basePath, d);
     if (fs.existsSync(p)) archive.directory(p, d);
   }
   archive.file(path.join(__dirname, "package.json"), { name: "package.json" });
@@ -888,7 +948,7 @@ app.get("/api/admin/backup", auth(["super_admin"]), async (req, res) => {
 });
 
 // Bank config
-const BOLETO_CFG_PATH = path.join(__dirname, "bank-config.json");
+const BOLETO_CFG_PATH = path.join(basePath, "bank-config.json");
 function loadBankCfg() {
   try { return JSON.parse(fs.readFileSync(BOLETO_CFG_PATH, "utf8")); } catch { return {}; }
 }
@@ -981,11 +1041,11 @@ app.post("/api/boleto/direto", auth(), async (req, res) => {
 
     const novoBoleto = new Boletos(dados);
     novoBoleto.gerarBoleto();
-    const tmpDir = path.join(__dirname, "tmp", "boletos");
+    const tmpDir = path.join(basePath, "tmp", "boletos");
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
     const { filePath } = await novoBoleto.pdfFile(tmpDir, banco);
     const fileName = `boleto_${banco}_${Date.now()}.pdf`;
-    const publicPath = path.join(__dirname, "dist", "boletos");
+    const publicPath = path.join(basePath, "dist", "boletos");
     if (!fs.existsSync(publicPath)) fs.mkdirSync(publicPath, { recursive: true });
     fs.copyFileSync(filePath, path.join(publicPath, fileName));
 
@@ -1003,7 +1063,13 @@ app.post("/api/boleto/direto", auth(), async (req, res) => {
 });
 
 // SPA
-app.get("*", (_,res)=>res.sendFile(path.join(__dirname,"dist","index.html")));
+app.get("*", (req,res)=>{
+  const fsPath = path.join(basePath,"dist","index.html");
+  try {
+    if (isPkg && fs.existsSync(fsPath)) return res.sendFile(fsPath);
+  } catch {}
+  res.sendFile(path.join(__dirname,"dist","index.html"));
+});
 
 // SOCKET
 io.on("connection", socket=>{ socket.emit("stats_update",getStats()); socket.emit("wa_status",{status:waStatus}); if(waQR) socket.emit("wa_qr",waQR); });

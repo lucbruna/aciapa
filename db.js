@@ -9,7 +9,9 @@ const path = require("path");
 const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 
-const DATA_DIR = path.join(__dirname, "data");
+const isPkg = typeof process.pkg !== "undefined";
+const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
+const DATA_DIR = path.join(basePath, "data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_FILE = path.join(DATA_DIR, "nexuspro.db");
@@ -48,22 +50,32 @@ function _now() {
 }
 
 // Constrói SQL WHERE dinâmico para queries $gte, $lte, $like, $in
+function _bindSafe(val) {
+  if (typeof val === "boolean") return val ? 1 : 0;
+  if (val === undefined || val === null) return null;
+  if (typeof val === "number" || typeof val === "string" || typeof val === "bigint") return val;
+  if (Buffer.isBuffer(val)) return val;
+  return String(val);
+}
+
 function _buildWhere(query) {
   const clauses = [];
   const params = [];
   for (const [key, val] of Object.entries(query)) {
-    if (typeof val === "object" && val !== null) {
-      if (val.$gte !== undefined) { clauses.push(`CAST(json_extract(data, '$.${key}') AS REAL) >= ?`); params.push(val.$gte); }
-      if (val.$lte !== undefined) { clauses.push(`CAST(json_extract(data, '$.${key}') AS REAL) <= ?`); params.push(val.$lte); }
+    if (val === undefined || val === null) continue;
+    if (typeof val === "object" && !Buffer.isBuffer(val)) {
+      if (val.$gte !== undefined) { clauses.push(`CAST(json_extract(data, '$.${key}') AS REAL) >= ?`); params.push(_bindSafe(val.$gte)); }
+      if (val.$lte !== undefined) { clauses.push(`CAST(json_extract(data, '$.${key}') AS REAL) <= ?`); params.push(_bindSafe(val.$lte)); }
       if (val.$like !== undefined) { clauses.push(`json_extract(data, '$.${key}') LIKE ?`); params.push(`%${val.$like}%`); }
       if (val.$in !== undefined) {
-        const ph = val.$in.map(() => "?").join(",");
+        const items = val.$in.map(v => _bindSafe(v));
+        const ph = items.map(() => "?").join(",");
         clauses.push(`json_extract(data, '$.${key}') IN (${ph})`);
-        params.push(...val.$in);
+        params.push(...items);
       }
     } else {
       clauses.push(`json_extract(data, '$.${key}') = ?`);
-      params.push(val);
+      params.push(_bindSafe(val));
     }
   }
   return { sql: clauses.join(" AND "), params };
@@ -84,8 +96,14 @@ class Collection {
       return stmts.getAll.all(this.name).map(r => this._rowToDoc(r));
     }
     const { sql, params } = _buildWhere(query);
-    const rows = db.prepare(`SELECT * FROM items WHERE name = ? AND ${sql} ORDER BY rowid DESC`).all(this.name, ...params);
-    return rows.map(r => this._rowToDoc(r));
+    if (!sql) return stmts.getAll.all(this.name).map(r => this._rowToDoc(r));
+    try {
+      const rows = db.prepare(`SELECT * FROM items WHERE name = ? AND ${sql} ORDER BY rowid DESC`).all(this.name, ...params);
+      return rows.map(r => this._rowToDoc(r));
+    } catch (e) {
+      console.error(`[DB] find error on ${this.name}:`, e.message, { sql, params });
+      return [];
+    }
   }
 
   findOne(query) {
@@ -175,7 +193,7 @@ function migrateFromJson(collectionName) {
 class AppDatabase {
   constructor() {
     // Migrar dados existentes
-    const collections = ["users","clientes","transacoes","mensagens","campanhas","kanban","atividades","notificacoes","templates","settings","chat_ia","planilhas","tarefas","produtos","rh","emails","contabilidade","notas_fiscais","advocacia","agenda","associados"];
+    const collections = ["users","clientes","transacoes","mensagens","campanhas","kanban","atividades","notificacoes","templates","settings","chat_ia","planilhas","tarefas","produtos","rh","emails","contabilidade","notas_fiscais","advocacia","agenda","associados","email_subscribers"];
     for (const name of collections) migrateFromJson(name);
 
     this.users       = new Collection("users");
@@ -199,6 +217,7 @@ class AppDatabase {
     this.advocacia   = new Collection("advocacia");
     this.agenda      = new Collection("agenda");
     this.associados  = new Collection("associados");
+    this.email_subscribers = new Collection("email_subscribers");
 
     this._seed();
   }

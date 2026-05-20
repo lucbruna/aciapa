@@ -12,10 +12,10 @@
     "electron": "npm run build && electron electron/main.js",
     "build:exe": "npm run build && electron-builder --win nsis --x64",
     "build:portable": "npm run build && electron-builder --win portable --x64",
-    "package": "npm run build && pkg server.js --targets node18-win-x64 --output dist-exe/aciapa.exe"
+    "package": "build-pkg.bat"
   },
   "dependencies": {
-    "archiver": "^8.0.0",
+    "archiver": "^5.3.2",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.5",
@@ -28,6 +28,7 @@
     "mercadopago": "^2.12.1",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
+    "nodemailer": "^8.0.7",
     "qrcode": "^1.5.3",
     "react-router-dom": "^7.15.1",
     "socket.io": "^4.7.2",
@@ -109,6 +110,15 @@
       "uploads/",
       "auth_info/"
     ],
+    "asarUnpack": [
+      "server.js",
+      "db.js",
+      "node_modules/better-sqlite3/**",
+      "node_modules/bcryptjs/**",
+      "data/**",
+      "uploads/**",
+      "auth_info/**"
+    ],
     "extraMetadata": {
       "main": "electron/main.js"
     }
@@ -119,6 +129,7 @@
       "data/**/*",
       "auth_info/**/*"
     ],
+    "public-packages": "better-sqlite3",
     "targets": [
       "node18-win-x64"
     ]
@@ -130,7 +141,7 @@
     "whatsapp",
     "ia",
     "kanban",
-"aciapa"
+    "aciapa"
   ],
   "author": "ACIAPA",
   "license": "MIT"
