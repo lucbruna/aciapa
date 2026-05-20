@@ -29,8 +29,20 @@ const io     = new Server(server, { cors:{ origin:"*" } });
 
 app.use(cors());
 app.use(express.json({ limit:"50mb" }));
-app.use(express.static(path.join(__dirname,"dist")));
+
+// Resolve a pasta dist de forma robusta para rodar localmente ou empacotado no Electron
+let distPath = path.join(__dirname, "dist");
+if (!isPkg && !fs.existsSync(distPath)) {
+  const asarPath = path.join(__dirname, "..", "app.asar", "dist");
+  if (fs.existsSync(asarPath)) {
+    distPath = asarPath;
+  }
+}
+app.use(express.static(distPath));
 if (isPkg) app.use(express.static(path.join(basePath,"dist")));
+
+// Servir boletos gerados de forma independente da pasta dist do ASAR (que é somente leitura)
+app.use("/boletos", express.static(path.join(basePath, "dist", "boletos")));
 
 const upload     = multer({ dest:"uploads/", limits:{ fileSize:50*1024*1024 } });
 const JWT_SECRET = process.env.JWT_SECRET || "aciapa_jwt_2025_fallback_key";
@@ -78,7 +90,19 @@ const auth = (roles=[]) => (req,res,next) => {
 };
 
 // ── Versão e Diagnóstico ──────────────────────────────────────────────────────
-const pkg = require("./package.json");
+let pkg = { version: "2.0.0", name: "aciapa", description: "" };
+try {
+  pkg = require("./package.json");
+} catch {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const asarPkgPath = path.join(__dirname, "..", "app.asar", "package.json");
+    if (fs.existsSync(asarPkgPath)) {
+      pkg = JSON.parse(fs.readFileSync(asarPkgPath, "utf8"));
+    }
+  } catch {}
+}
 
 app.get("/api/versao", (_, res) => {
   res.json({
@@ -1070,7 +1094,7 @@ app.get("*", (req,res)=>{
   try {
     if (isPkg && fs.existsSync(fsPath)) return res.sendFile(fsPath);
   } catch {}
-  res.sendFile(path.join(__dirname,"dist","index.html"));
+  res.sendFile(path.join(distPath,"index.html"));
 });
 
 // SOCKET

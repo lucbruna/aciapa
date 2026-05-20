@@ -8,20 +8,27 @@ let mainWindow = null, tray = null, serverProc = null;
 const PORT = 3001;
 const MAX_WAIT = 30; // segundos máximos de espera pelo servidor
 
+function resolvePath(relativePath) {
+  if (app.isPackaged) {
+    const p = path.join(process.resourcesPath, "app.asar.unpacked", relativePath);
+    if (require("fs").existsSync(p)) return p;
+    return path.join(process.resourcesPath, relativePath);
+  }
+  return path.join(__dirname, "..", relativePath);
+}
+
 function startServer() {
   return new Promise(resolve => {
-    let entry;
-    if (app.isPackaged) {
-      // Electron-builder extrai asarUnpack para app.asar.unpacked
-      entry = path.join(process.resourcesPath, "app.asar.unpacked", "server.js");
-    } else {
-      entry = path.join(__dirname, "..", "server.js");
-    }
-    // Fallback: tenta direto no resourcesPath se o caminho acima falhar
-    if (app.isPackaged && !require("fs").existsSync(entry)) {
-      entry = path.join(process.resourcesPath, "server.js");
-    }
-    serverProc  = fork(entry, [], { silent:true, env:{ ...process.env, PORT } });
+    const entry = resolvePath("server.js");
+    const asarNodeModules = path.join(process.resourcesPath, "app.asar", "node_modules");
+    serverProc  = fork(entry, [], { 
+      silent: true, 
+      env: { 
+        ...process.env, 
+        PORT,
+        NODE_PATH: app.isPackaged ? asarNodeModules : ""
+      } 
+    });
     serverProc.stdout?.on("data", d => {
       const s = d.toString();
       console.log("[ACIAPA]", s.trim());
@@ -42,7 +49,7 @@ function startServer() {
   });
 }
 
-function waitForServer(n=35) {
+function waitForServer(n=60) {
   return new Promise((ok,fail) => {
     const check = t => {
       if (t<=0) return fail();
@@ -52,13 +59,6 @@ function waitForServer(n=35) {
     };
     check(n);
   });
-}
-
-function forceShowWindow() {
-  if (mainWindow && !mainWindow.isVisible()) {
-    console.log("[ACIAPA] Forçando exibição da janela por timeout");
-    mainWindow.show();
-  }
 }
 
 function createWindow() {
@@ -75,29 +75,27 @@ function createWindow() {
       nodeIntegration: false, contextIsolation: true,
       preload: path.join(__dirname, "preload.js"),
     },
-    show: false,
+    show: true,
   });
 
-  mainWindow.loadURL(`http://localhost:${PORT}`).catch(err => {
-    console.error("[ACIAPA] loadURL error:", err);
-  });
-
-  mainWindow.webContents.on("did-fail-load", (_, code, desc) => {
-    console.error(`[ACIAPA] did-fail-load: ${code} ${desc}`);
-  });
-
-  mainWindow.once("ready-to-show", () => {
-    console.log("[ACIAPA] ready-to-show, exibindo janela");
-    mainWindow.show();
-  });
-
-  // Fallback: se ready-to-show não disparar em 15s, força exibição
-  setTimeout(forceShowWindow, 15000);
+  // Carrega página de loading local (não depende do servidor HTTP)
+  mainWindow.loadFile(path.join(__dirname, "loading.html"));
 
   mainWindow.on("close", e => {
     if (!app.isQuiting) { e.preventDefault(); mainWindow.hide(); }
   });
   mainWindow.on("closed", () => { mainWindow = null; });
+}
+
+function redirectToApp() {
+  if (!mainWindow) return;
+  const url = `http://localhost:${PORT}`;
+  console.log("[ACIAPA] Redirecionando para", url);
+  mainWindow.loadURL(url).catch(err => {
+    console.error("[ACIAPA] loadURL error:", err);
+    // Tenta novamente em 2s
+    setTimeout(redirectToApp, 2000);
+  });
 }
 
 function createTray() {
@@ -124,6 +122,27 @@ ipcMain.handle("app:maximize", ()=>mainWindow?.isMaximized()?mainWindow.restore(
 ipcMain.handle("app:close",    ()=>mainWindow?.hide());
 ipcMain.handle("app:open-url", (_,url)=>shell.openExternal(url));
 ipcMain.handle("app:version",  ()=>app.getVersion());
+
+// Server check via IPC (usado pela loading page que roda em file://)
+ipcMain.handle("server:check", async () => {
+  try {
+    await httpGet(`http://localhost:${PORT}/api/status`);
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+});
+
+ipcMain.on("server:redirect", () => {
+  redirectToApp();
+});
+
+function httpGet(url) {
+  return new Promise((ok, fail) => {
+    http.get(url, r => r.statusCode === 200 ? ok() : fail())
+      .on("error", fail);
+  });
+}
 
 // ── Auto Update ────────────────────────────────────────────────────────────
 autoUpdater.autoDownload = false;
@@ -168,10 +187,19 @@ function checkUpdateSilent() {
 
 app.whenReady().then(async ()=>{
   console.log("[ACIAPA] Iniciando sistema...");
-  await startServer();
-  try { await waitForServer();   } catch(_){ console.warn("[ACIAPA] Timeout, abrindo mesmo assim..."); }
+  // Mostra janela com loading imediatamente
   createWindow();
   createTray();
+  // Inicia servidor em background
+  await startServer();
+  try {
+    await waitForServer();
+    console.log("[ACIAPA] Servidor pronto!");
+    redirectToApp();
+  } catch(_){
+    console.warn("[ACIAPA] Servidor não respondeu após espera máxima");
+    // A página loading.html já mostrará o erro após 60 tentativas
+  }
   if (app.isPackaged) setTimeout(checkUpdateSilent, 5000);
   app.on("activate", ()=>{ if(!mainWindow) createWindow(); else mainWindow.show(); });
 });

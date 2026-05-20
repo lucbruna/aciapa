@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ACIAPA — Iniciando...</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#020408;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:24px;padding:32px}
+.loader{width:48px;height:48px;border:4px solid #1e293b;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+h1{font-size:1.5rem;font-weight:600;background:linear-gradient(135deg,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+p{color:#94a3b8;text-align:center;max-width:400px;line-height:1.6}
+.status{font-size:.875rem;color:#64748b}
+.error{display:none;flex-direction:column;align-items:center;gap:16px;margin-top:16px}
+.error-icon{width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:28px}
+.error h2{color:#ef4444;-webkit-text-fill-color:#ef4444}
+.error p{color:#94a3b8;font-size:.875rem;max-width:500px}
+.btn{padding:10px 24px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:.875rem;font-weight:500;cursor:pointer;transition:background .2s}
+.btn:hover{background:#4f46e5}
+.btn.secondary{background:#1e293b;color:#e2e8f0}
+.btn.secondary:hover{background:#334155}
+.actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+</style>
+</head>
+<body>
+<div class="loader" id="loader"></div>
+<h1>ACIAPA — Gestão Empresarial</h1>
+<p id="msg">Iniciando servidor, aguarde...</p>
+<p class="status" id="status"></p>
+<div class="error" id="error">
+  <div class="error-icon">⚠</div>
+  <h2>Servidor não iniciou</h2>
+  <p id="errorMsg">O servidor backend não conectou após várias tentativas.</p>
+  <ul style="color:#94a3b8;font-size:.875rem;text-align:left;list-style:none;padding:0">
+    <li>• Porta 3001 pode estar em uso</li>
+    <li>• Módulo nativo SQLite incompatível</li>
+    <li>• Sem permissão de escrita na pasta de dados</li>
+  </ul>
+  <div class="actions">
+    <button class="btn" onclick="location.reload()">Tentar novamente</button>
+  </div>
+</div>
+<script>
+(function() {
+  var attempts = 0;
+  var maxAttempts = 60;
+  var checkTimer = null;
+  var msgEl = document.getElementById("msg");
+  var statusEl = document.getElementById("status");
+  var loaderEl = document.getElementById("loader");
+  var errorEl = document.getElementById("error");
+
+  function checkServer() {
+    attempts++;
+    statusEl.textContent = "Tentativa " + attempts + "/" + maxAttempts + "...";
+    if (window.aciapa && window.aciapa.checkServer) {
+      window.aciapa.checkServer().then(function(result) {
+        if (result.ok) {
+          msgEl.textContent = "Servidor pronto! Carregando...";
+          window.aciapa.redirectToApp();
+        } else if (attempts < maxAttempts) {
+          checkTimer = setTimeout(checkServer, 1000);
+        } else {
+          showError("Servidor não respondeu após " + maxAttempts + " tentativas.");
+        }
+      }).catch(function() {
+        if (attempts < maxAttempts) {
+          checkTimer = setTimeout(checkServer, 1000);
+        } else {
+          showError("Erro ao verificar servidor.");
+        }
+      });
+    } else {
+      // fallback se aciapa API não estiver disponível
+      if (attempts < maxAttempts) {
+        checkTimer = setTimeout(checkServer, 2000);
+      } else {
+        showError("API Electron não disponível.");
+      }
+    }
+  }
+
+  function showError(msg) {
+    loaderEl.style.display = "none";
+    msgEl.style.display = "none";
+    statusEl.style.display = "none";
+    document.getElementById("errorMsg").textContent = msg;
+    errorEl.style.display = "flex";
+  }
+
+  window.addEventListener("load", function() {
+    setTimeout(checkServer, 500);
+  });
+})();
+</script>
+</body>
+</html>

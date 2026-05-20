@@ -37,6 +37,9 @@ if %errorlevel% neq 0 ( echo  [ERRO] Build falhou! & exit /b 1 )
 echo  [Electron] Verificando electron-builder...
 npx electron-builder --version > nul 2>&1
 if %errorlevel% neq 0 ( call npm install --save-dev electron electron-builder --legacy-peer-deps --silent )
+echo  [Electron] Reconstruindo modulos nativos para Electron...
+npx electron-builder install-app-deps
+if %errorlevel% neq 0 ( echo  [AVISO] Rebuild nativo falhou, tentando continuar... )
 echo  [Electron] Gerando instalador profissional...
 npx electron-builder --win nsis --x64
 if %errorlevel% neq 0 ( echo  [ERRO] Build falhou! & exit /b 1 )
