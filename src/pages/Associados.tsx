@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { C, fmt, fmtN } from "../constants.js";
-import { Users, Plus, Search, Download, Upload, Edit, Trash2, Eye, X, RefreshCw, CheckCircle, AlertTriangle, Save, FileSpreadsheet } from "lucide-react";
+import { Users, Plus, Search, Download, Upload, Edit, Trash2, Eye, X, RefreshCw, CheckCircle, AlertTriangle, MessageSquare, Save, FileSpreadsheet } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useDebounce } from "../hooks/useDebounce.js";
 import { Modal } from "../components/ui/Modal.jsx";
 import { SkeletonTable } from "../components/ui/Skeleton.jsx";
+
+const SB=({s})=>{ const m={em_dia:[C.green,"Em Dia"],atrasado:[C.red,"Atrasado"],vencendo:[C.amber,"Vencendo"],a_vencer:[C.cyan,"A Vencer"],ativo:[C.green,"Ativo"],inativo:[C.muted,"Inativo"]}; const [color,label]=m[s]||[C.muted,s]; return <span style={{color,background:`${color}18`,border:`1px solid ${color}30`}} className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-current"/>{label}</span>; };
+const WA=({tel,nome,msg=""})=>{ const n=tel?.replace(/\D/g,""); if(!n) return null; return <a href={`https://wa.me/55${n}?text=${encodeURIComponent(msg||`Olá ${nome?.split(" ")[0]}!`)}`} target="_blank" rel="noopener noreferrer" style={{background:"rgba(37,211,102,0.12)",border:"1px solid rgba(37,211,102,0.25)",color:"#25d366"}} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold hover:bg-green-500/20 transition-colors whitespace-nowrap"><MessageSquare size={10}/>WA</a>; };
 
 export default function Associados({ toast, api, reload }) {
   const [list,   setList]   = useState<any[]>([]);
@@ -17,6 +20,7 @@ export default function Associados({ toast, api, reload }) {
   const [selected,setSelected]=useState<any[]>([]);
   const [editM,  setEditM]  = useState<any>(null);
   const [detM,   setDetM]   = useState<any>(null);
+  const [pagM,   setPagM]   = useState<any>(null);
   const [impM,   setImpM]   = useState(false);
   const [tab,    setTab]    = useState("geral");
 
@@ -24,6 +28,7 @@ export default function Associados({ toast, api, reload }) {
   useEffect(()=>{ load(); },[fSt,fSit,searchDeb]);
 
   const del=async id=>{ if(!confirm("Excluir?")) return; await api(`/api/associados/${id}`,{method:"DELETE"}); toast("Excluído","info"); load(); reload(); };
+  const pagar=async()=>{ await api(`/api/associados/${pagM.id}/pagar`,{method:"POST",body:JSON.stringify({})}); toast(`Pagamento de ${pagM.nome.split(" ")[0]} registrado!`,"success"); setPagM(null); load(); reload(); };
 
   const exportPDF=()=>{
     const doc=new jsPDF(); const ind:[number,number,number]=[99,102,241],dark:[number,number,number]=[2,4,8];
@@ -52,10 +57,10 @@ export default function Associados({ toast, api, reload }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {[[total,"Total",C.indigo],[ativos,"Ativos",C.green],[inativos,"Inativos",C.muted]].map(([v,l,c])=>(
+      <div className="grid grid-cols-4 gap-3">
+        {[[total,"Total",C.indigo],[ativos,"Ativos",C.green],[list.filter(a=>a._situacao==="atrasado").length,"Inadimplentes",C.red],[list.filter(a=>a._situacao==="em_dia").reduce((s,a)=>s+(a.valor||0),0),"Recebido Mês",C.cyan]].map(([v,l,c])=>(
           <div key={l} style={{background:`${c}10`,border:`1px solid ${c}25`}} className="rounded-xl p-3">
-            <div style={{color:c,fontFamily:"monospace"}} className="font-extrabold text-xl tabular-nums">{fmtN(v)}</div>
+            <div style={{color:c,fontFamily:"monospace"}} className="font-extrabold text-xl tabular-nums">{l==="Recebido Mês"?fmt(v):fmtN(v)}</div>
             <div style={{color:C.muted}} className="text-[11px] mt-0.5">{l}</div>
           </div>
         ))}
@@ -83,9 +88,9 @@ export default function Associados({ toast, api, reload }) {
       {selected.length>0&&<div style={{background:C.indigoDim,border:`1px solid ${C.indigoBorder}`}} className="flex items-center gap-3 rounded-xl px-4 py-2.5"><span style={{color:C.indigo}} className="text-xs font-bold">{selected.length} selecionados</span><button onClick={()=>setSelected([])} style={{color:C.muted,marginLeft:"auto"}} className="text-xs hover:underline">Limpar</button></div>}
 
       <div style={{background:C.card,border:`1px solid ${C.border}`}} className="rounded-2xl overflow-hidden">
-        {loading?<SkeletonTable rows={6} cols={6}/>:(
+        {loading?<SkeletonTable rows={6} cols={8}/>:(
           <table className="w-full">
-            <thead><tr style={{background:C.card2,borderBottom:`1px solid ${C.border}`}}>{["","Nome","CPF","Telefone","Status","Ações"].map(h=><th key={h} style={{color:C.muted,padding:"10px 14px",textAlign:"left",fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.08em"}}>{h}</th>)}</tr></thead>
+            <thead><tr style={{background:C.card2,borderBottom:`1px solid ${C.border}`}}>{["","Cliente","Contato","Plano","Score","Status","Pagamento","Ações"].map(h=><th key={h} style={{color:C.muted,padding:"10px 14px",textAlign:"left",fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.08em"}}>{h}</th>)}</tr></thead>
             <tbody>
               {list.map((a,i)=>(
                 <tr key={a.id} style={{borderBottom:i<list.length-1?`1px solid ${C.border}`:"none",background:selected.includes(a.id)?C.indigoDim:"transparent"}} className="hover:bg-white/[0.015] transition-colors">
@@ -96,9 +101,18 @@ export default function Associados({ toast, api, reload }) {
                       <div><div style={{color:C.text}} className="text-sm font-semibold">{a.nome}</div><div style={{color:C.muted}} className="text-[10px]">{a.email}</div></div>
                     </div>
                   </td>
-                  <td style={{padding:"10px 14px"}}><span style={{color:C.sub,fontFamily:"monospace"}} className="text-xs">{a.cpf||"—"}</span></td>
-                  <td style={{padding:"10px 14px"}}><span style={{color:C.sub}} className="text-xs">{a.telefone||"—"}</span></td>
-                  <td style={{padding:"10px 14px"}}><span style={{color:a.status==="ativo"?C.green:a.status==="inativo"?C.muted:C.sub,background:`${(a.status==="ativo"?C.green:a.status==="inativo"?C.muted:C.sub)}18`,border:`1px solid ${(a.status==="ativo"?C.green:a.status==="inativo"?C.muted:C.sub)}30`}} className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-current"/>{a.status==="ativo"?"Ativo":"Inativo"}</span></td>
+                  <td style={{padding:"10px 14px"}}><div className="flex items-center gap-1.5"><span style={{color:C.sub,fontFamily:"monospace"}} className="text-xs">{a.telefone||"—"}</span>{a.telefone&&<WA tel={a.telefone} nome={a.nome}/>}</div></td>
+                  <td style={{padding:"10px 14px"}}><div style={{color:C.text}} className="text-xs font-semibold">{a.plano||"—"}</div><div style={{color:C.indigo,fontFamily:"monospace"}} className="text-[11px] font-bold">{fmt(a.valor||0)}</div></td>
+                  <td style={{padding:"10px 14px"}}>
+                    <div className="flex items-center gap-1">
+                      <div style={{width:28,height:4,background:"rgba(255,255,255,0.1)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${a.score||0}%`,background:a.score>=80?C.green:a.score>=50?C.amber:C.red,height:"100%",borderRadius:2}}/></div>
+                      <span style={{color:a.score>=80?C.green:a.score>=50?C.amber:C.red,fontFamily:"monospace"}} className="text-[10px] font-bold">{a.score||0}</span>
+                    </div>
+                  </td>
+                  <td style={{padding:"10px 14px"}}><SB s={a.status}/></td>
+                  <td style={{padding:"10px 14px"}}>
+                    {a.status==="ativo"?(a._situacao==="em_dia"?<SB s="em_dia"/>:<button onClick={()=>setPagM(a)} style={{background:C.redDim,color:C.red,border:"1px solid rgba(244,63,94,0.3)"}} className="text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 hover:bg-red-500/20"><AlertTriangle size={9}/><SB s={a._situacao||"a_vencer"}/></button>):<span style={{color:C.muted}} className="text-xs">—</span>}
+                  </td>
                   <td style={{padding:"10px 14px"}}>
                     <div className="flex items-center gap-1">
                       <button onClick={()=>setDetM(a)} style={{color:C.muted,border:`1px solid ${C.border}`}} className="w-7 h-7 rounded-lg flex items-center justify-center hover:text-white hover:border-white/20 transition-colors"><Eye size={12}/></button>
@@ -130,6 +144,10 @@ export default function Associados({ toast, api, reload }) {
             <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={async e=>{ const f=e.target.files?.[0]; if(!f) return; const fd=new FormData(); fd.append("file",f); const r=await fetch("/api/associados/import",{method:"POST",headers:{Authorization:`Bearer ${localStorage.getItem("aciapa_token")}`},body:fd}); const d=await r.json(); if(d.ok){toast(`${d.importados} associados importados!`,"success");setImpM(false);load();reload();}else toast(d.error||"Erro","error"); e.target.value=""; }}/>
           </label>
         </div>
+      </Modal>
+
+      <Modal open={!!pagM} onClose={()=>setPagM(null)} title="Registrar Pagamento">
+        {pagM&&<div className="space-y-4"><div style={{background:C.indigoDim,border:`1px solid ${C.indigoBorder}`}} className="rounded-xl p-4"><div style={{color:C.indigo}} className="font-bold">{pagM.nome}</div><div style={{color:C.muted}} className="text-sm mt-1">{pagM.plano||"—"} · {fmt(pagM.valor||0)}/mês</div></div><p style={{color:C.sub}} className="text-sm">Confirmar pagamento de <strong style={{color:C.green}}>{fmt(pagM.valor||0)}</strong>?</p><div className="flex gap-3"><button onClick={()=>setPagM(null)} style={{border:`1px solid ${C.border}`,color:C.muted}} className="flex-1 py-2.5 rounded-xl text-sm hover:border-white/20">Cancelar</button><button onClick={pagar} style={{background:`linear-gradient(135deg,${C.green},#16a34a)`,color:"white"}} className="flex-1 py-2.5 rounded-xl text-sm font-extrabold hover:opacity-90"><CheckCircle size={14} className="inline mr-1"/>Confirmar</button></div></div>}
       </Modal>
       </>}
 
