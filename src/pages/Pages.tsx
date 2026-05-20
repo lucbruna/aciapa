@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════════════════════
 // KANBAN
 // ══════════════════════════════════════════════════════════════════════════════
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { C, fmt } from "../constants.js";
 import { Plus, X, Edit, Trash2, RefreshCw, Save, DollarSign, ChevronRight, FileText, FileSpreadsheet, Upload, Printer, Check, Eye, EyeOff, Brain, Building2, Users as UsersIcon, Bell, Shield, Search, AlertTriangle, CalendarDays, Clock, MapPin, Download, RotateCw, Mail, Send, Users } from "lucide-react";
 
@@ -400,8 +400,6 @@ export function Agenda({ toast, api }) {
 // ══════════════════════════════════════════════════════════════════════════════
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useRef } from "react";
-
 const SECOES_RELATORIO = {
   resumo: { label: "Resumo Executivo", cor: C.indigo },
   inadimplentes: { label: "Inadimplentes", cor: C.red },
@@ -602,11 +600,22 @@ export function Configuracoes({ toast, api, reload }) {
   const [saved,  setSaved]= useState(false);
   const [showKey,setShowKey]=useState({a:false,o:false});
   const [newUser,setNewUser]=useState<any>(null);
+  const smtpRef = useRef({smtpHost:"",smtpPort:"587",smtpUsuario:"",smtpSenha:"",smtpRemetente:"",smtpSecure:false,smtpSenhaSet:false});
+  const [smtpInit,setSmtpInit] = useState(0);
 
   useEffect(()=>{
     if(tab==="email"){
       api("/api/smtp-config").then(r=>r.json()).then(d=>{
-        setCfg({smtpHost:d.host||"",smtpPort:d.port||"587",smtpUsuario:d.usuario||"",smtpSenha:d.senha||"",smtpRemetente:d.remetente||"",smtpSecure:d.secure||false,smtpSenhaSet:d.senhaSet||false});
+        const v = smtpRef.current;
+        v.smtpHost = d.host||"";
+        v.smtpPort = d.port||"587";
+        v.smtpUsuario = d.usuario||"";
+        v.smtpSenha = d.senha||"";
+        v.smtpRemetente = d.remetente||"";
+        v.smtpSecure = d.secure||false;
+        v.smtpSenhaSet = d.senhaSet||false;
+        setCfg({smtpHost:v.smtpHost,smtpPort:v.smtpPort,smtpUsuario:v.smtpUsuario,smtpSenha:v.smtpSenha,smtpRemetente:v.smtpRemetente,smtpSecure:v.smtpSecure,smtpSenhaSet:v.smtpSenhaSet});
+        setSmtpInit(i=>i+1);
       }).catch(()=>{});
     } else {
       api("/api/settings").then(r=>r.json()).then(setCfg).catch(()=>{});
@@ -616,8 +625,9 @@ export function Configuracoes({ toast, api, reload }) {
 
   const saveCfg=async()=>{
     if(tab==="email"){
-      const body:any = {host:cfg.smtpHost,port:cfg.smtpPort,usuario:cfg.smtpUsuario,remetente:cfg.smtpRemetente,secure:cfg.smtpSecure};
-      if (cfg.smtpSenha) body.senha = cfg.smtpSenha;
+      const v = smtpRef.current;
+      const body:any = {host:v.smtpHost,port:v.smtpPort,usuario:v.smtpUsuario,remetente:v.smtpRemetente,secure:v.smtpSecure};
+      if (v.smtpSenha) body.senha = v.smtpSenha;
       await api("/api/smtp-config",{method:"PUT",body:JSON.stringify(body)});
     } else {
       await api("/api/settings",{method:"PUT",body:JSON.stringify(cfg)});
@@ -761,7 +771,7 @@ export function Configuracoes({ toast, api, reload }) {
       )}
 
       {tab==="email"&&(
-        <S icon={Mail} title="Configuração SMTP" sub="Servidor de e-mail para envio real" color={C.cyan}>
+        <S key={smtpInit} icon={Mail} title="Configuração SMTP" sub="Servidor de e-mail para envio real" color={C.cyan}>
           <div className="space-y-4">
             <div style={{background:C.cyanDim,border:"1px solid rgba(6,182,212,0.2)",color:C.sub}} className="rounded-xl p-3 text-xs space-y-1">
               <div style={{color:C.cyan}} className="font-bold">📧 Configure o servidor SMTP para enviar e-mails reais</div>
@@ -770,33 +780,34 @@ export function Configuracoes({ toast, api, reload }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Servidor SMTP *</label>
-                <input value={cfg.smtpHost||""} onChange={e=>setCfg({...cfg,smtpHost:e.target.value})} placeholder="smtp.gmail.com" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
+                <input defaultValue={smtpRef.current.smtpHost} onInput={e=>smtpRef.current.smtpHost=e.currentTarget.value} placeholder="smtp.gmail.com" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
               </div>
               <div>
                 <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Porta *</label>
-                <input type="number" value={cfg.smtpPort||"587"} onChange={e=>setCfg({...cfg,smtpPort:e.target.value})} placeholder="587" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
+                <input type="number" defaultValue={smtpRef.current.smtpPort} onInput={e=>smtpRef.current.smtpPort=e.currentTarget.value} placeholder="587" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
               </div>
               <div>
                 <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Usuário *</label>
-                <input value={cfg.smtpUsuario||""} onChange={e=>setCfg({...cfg,smtpUsuario:e.target.value})} placeholder="seu@email.com" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
+                <input defaultValue={smtpRef.current.smtpUsuario} onInput={e=>smtpRef.current.smtpUsuario=e.currentTarget.value} placeholder="seu@email.com" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
               </div>
               <div>
                 <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Senha</label>
-                <input type="password" value={cfg.smtpSenha||""} onChange={e=>setCfg({...cfg,smtpSenha:e.target.value})} placeholder={cfg.smtpSenhaSet ? "•••••••• (deixe vazio para manter)" : "senha ou app password"} style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
+                <input type="password" defaultValue={smtpRef.current.smtpSenha} onInput={e=>smtpRef.current.smtpSenha=e.currentTarget.value} placeholder={smtpRef.current.smtpSenhaSet ? "•••••••• (deixe vazio para manter)" : "senha ou app password"} style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
               </div>
               <div>
                 <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Remetente (opcional)</label>
-                <input value={cfg.smtpRemetente||""} onChange={e=>setCfg({...cfg,smtpRemetente:e.target.value})} placeholder="Nome <email>" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
+                <input defaultValue={smtpRef.current.smtpRemetente} onInput={e=>smtpRef.current.smtpRemetente=e.currentTarget.value} placeholder="Nome <email>" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
               </div>
               <div className="flex items-end">
                 <label className="flex items-center gap-2 cursor-pointer" style={{color:C.sub}}>
-                  <input type="checkbox" checked={cfg.smtpSecure||false} onChange={e=>setCfg({...cfg,smtpSecure:e.target.checked})} style={{accentColor:C.cyan}}/>
+                  <input type="checkbox" defaultChecked={smtpRef.current.smtpSecure} onChange={e=>smtpRef.current.smtpSecure=e.target.checked} style={{accentColor:C.cyan}}/>
                   <span className="text-xs font-bold uppercase tracking-wider">SSL/TLS (porta 465)</span>
                 </label>
               </div>
             </div>
             <button onClick={async()=>{
-              const r=await api("/api/smtp-test",{method:"POST",body:JSON.stringify({host:cfg.smtpHost,port:cfg.smtpPort,usuario:cfg.smtpUsuario,senha:cfg.smtpSenha,secure:cfg.smtpSecure})});
+              const v = smtpRef.current;
+              const r=await api("/api/smtp-test",{method:"POST",body:JSON.stringify({host:v.smtpHost,port:v.smtpPort,usuario:v.smtpUsuario,senha:v.smtpSenha,secure:v.smtpSecure})});
               const d=await r.json();
               if(d.ok) toast(d.mensagem,"success"); else toast(d.error||"Falha no teste","error");
             }} style={{background:`linear-gradient(135deg,${C.cyan},${C.indigo})`,color:"white"}} className="w-full py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 hover:opacity-90">

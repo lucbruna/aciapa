@@ -427,10 +427,10 @@ app.get("/api/settings", auth(), (_,res)=>{ const s={...db.settings.findOne({key
 app.put("/api/settings", auth(["super_admin","admin"]), (req,res)=>{ const cur=db.settings.findOne({key:"empresa"}); const upd={...req.body}; if(upd.anthropicKey==="***") delete upd.anthropicKey; if(upd.openaiKey==="***") delete upd.openaiKey; if(cur) db.settings.update(cur.id,upd); else db.settings.insert({key:"empresa",...upd}); res.json({ok:true}); });
 
 // SMTP CONFIG
-app.get("/api/smtp-config", auth(), (_,res)=>{
+app.get("/api/smtp-config", auth(), (req,res)=>{
   const cfg=db.settings.findOne({key:"smtp"})||{};
-  const {senha:_, ...safe} = cfg;
-  safe.senhaSet = !!cfg.senha;
+  const {senha, ...safe} = cfg;
+  safe.senhaSet = !!senha;
   res.json(safe);
 });
 app.put("/api/smtp-config", auth(["super_admin","admin"]), (req,res)=>{

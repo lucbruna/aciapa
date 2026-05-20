@@ -64,7 +64,7 @@
   "build": {
     "appId": "com.aciapa.app",
     "productName": "ACIAPA",
-    "copyright": "ACIAPA SaaS",
+    "copyright": "Copyright © 2025-2026 ACIAPA Software Ltda. Todos os direitos reservados.",
     "publish": {
       "provider": "github",
       "owner": "lucbruna",
@@ -81,7 +81,8 @@
         }
       ],
       "icon": "electron/icon.ico",
-      "artifactName": "ACIAPA-Setup-${version}.${ext}"
+      "artifactName": "ACIAPA-Setup-${version}.${ext}",
+      "legalTrademarks": "ACIAPA é uma marca registrada."
     },
     "nsis": {
       "oneClick": false,
@@ -94,10 +95,18 @@
       "installerIcon": "electron/icon.ico",
       "uninstallerIcon": "electron/icon.ico",
       "installerHeaderIcon": "electron/icon.ico",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "language": "1046",
+      "unicode": true,
+      "runAfterFinish": true,
+      "installerSidebar": "buildResources/installer/installer-sidebar.bmp",
+      "installerHeader": "buildResources/installer/installer-header.bmp",
+      "uninstallDisplayName": "ACIAPA ${version} — Gestão Empresarial Completa",
+      "menuCategory": true
     },
     "directories": {
-      "output": "dist-electron"
+      "output": "dist-electron",
+      "buildResources": "buildResources"
     },
     "files": [
       "dist/**/*",
@@ -106,6 +115,7 @@
       "electron/**/*",
       "node_modules/**/*",
       "package.json",
+      "LICENSE.txt",
       "data/",
       "uploads/",
       "auth_info/"
