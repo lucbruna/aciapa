@@ -17,7 +17,7 @@ import Advocacia from "./pages/Advocacia.jsx";
 import { Kanban, Agenda, Relatorios, Configuracoes } from "./pages/Pages.jsx";
 import PortalLogin from "./pages/PortalLogin.jsx";
 import PortalDashboard from "./pages/PortalDashboard.jsx";
-import { Bell, LogOut, AlertTriangle, CheckCircle, X, Info, Menu } from "lucide-react";
+import { Minus, Square, Bell, LogOut, AlertTriangle, CheckCircle, X, Info, Menu } from "lucide-react";
 import { C, socket, fmt, fmtN } from "./constants.js";
 import { ThemeProvider } from "./contexts/ThemeContext.jsx";
 
@@ -132,6 +132,13 @@ function AppInner() {
       <Sidebar page={page} setPage={setPage} stats={stats} waStatus={waStatus} mobileOpen={mobileMenu} onToggleMobile={() => setMobileMenu(v => !v)}/>
       <div className="flex-1 flex flex-col overflow-hidden">
         <header style={{background:`${C.surface}e0`,backdropFilter:"blur(20px)",borderBottom:`1px solid ${C.border}`}} className="h-16 flex items-center px-6 gap-4 flex-shrink-0 sticky top-0 z-10">
+          {window.aciapa && (
+            <div className="flex items-center gap-1 mr-1">
+              <button onClick={()=>window.aciapa?.minimize?.()} style={{color:C.muted}} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors" title="Minimizar"><Minus size={14}/></button>
+              <button onClick={()=>window.aciapa?.maximize?.()} style={{color:C.muted}} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors" title="Maximizar"><Square size={12}/></button>
+              <button onClick={()=>window.aciapa?.close?.()} style={{color:C.muted}} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 transition-colors" title="Fechar"><X size={15}/></button>
+            </div>
+          )}
           <button onClick={() => setMobileMenu(true)} className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/5 transition-colors" style={{color:C.muted}}><Menu size={17}/></button>
           <div className="flex-1">
             <h1 style={{color:C.text}} className="font-bold text-[15px]">{pageLabel[page]||page}</h1>

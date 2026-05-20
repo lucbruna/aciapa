@@ -6,6 +6,9 @@ declare global {
       reload?: () => void;
       electron?: boolean;
       versao?: string;
+      minimize?: () => void;
+      maximize?: () => void;
+      close?: () => void;
       checkForUpdates?: () => Promise<{ available: boolean; info?: any }>;
       onUpdateStatus?: (cb: (...args: any[]) => void) => (() => void);
       downloadUpdate?: () => Promise<{ downloaded: boolean }>;
