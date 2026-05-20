@@ -26,13 +26,21 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Debug electron-builder version
+        run: npx electron-builder --version
+
       - name: Package Electron app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win nsis --x64
+        run: npx electron-builder --win nsis --x64 2>&1
+
+      - name: List dist-electron
+        if: success() || failure()
+        run: Get-ChildItem dist-electron -Name
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
+        if: success()
         with:
           files: |
             dist-electron/ACIAPA-Setup-*.exe
