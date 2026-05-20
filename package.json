@@ -69,7 +69,7 @@
     "publish": {
       "provider": "github",
       "owner": "lucbruna",
-      "repo": "nexuspro",
+      "repo": "aciapa",
       "releaseType": "release"
     },
     "win": {
