@@ -17,14 +17,11 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install deps
-        run: npm ci
+      - name: Install deps (skip broken install scripts)
+        run: npm ci --ignore-scripts
 
-      - name: Upgrade node-gyp for Python 3 compat
-        run: |
-          npm install -g node-gyp@latest
-          Remove-Item -Recurse -Force node_modules\node-gyp -ErrorAction SilentlyContinue
-          pip install setuptools
+      - name: Rebuild better-sqlite3 for Electron
+        run: npx @electron/rebuild -f -w better-sqlite3 --only better-sqlite3
 
       - name: Build frontend
         run: npm run build
@@ -37,5 +34,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist-electron/ACIAPA-Setup-*.exe
+          files: |
+            dist-electron/ACIAPA-Setup-*.exe
+            dist-electron/latest.yml
+            dist-electron/builder-debug.yml
           generate_release_notes: true
