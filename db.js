@@ -11,7 +11,8 @@ const Database = require("better-sqlite3");
 
 const isPkg = typeof process.pkg !== "undefined";
 const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
-const DATA_DIR = path.join(basePath, "data");
+// Permite sobrescrever o diretorio de dados via env var (usado pelo Electron para evitar Program Files)
+const DATA_DIR = process.env.ACIAPA_DATA_DIR || path.join(basePath, "data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_FILE = path.join(DATA_DIR, "nexuspro.db");

@@ -32,6 +32,12 @@ function logErr(line) {
 
 function startServer() {
   return new Promise(resolve => {
+    // Define diretorios gravaveis antes de qualquer tentativa
+    const userData = app.getPath("userData");
+    process.env.ACIAPA_DATA_DIR = path.join(userData, "data");
+    process.env.ACIAPA_AUTH_DIR = path.join(userData, "auth_info");
+    process.env.ACIAPA_UPLOADS_DIR = path.join(userData, "uploads");
+
     // Tenta carregar in-process primeiro (captura erro exato do require)
     try {
       const entry = resolvePath("server.js");
@@ -56,12 +62,12 @@ function startServer() {
     const entry = resolvePath("server.js");
     log("Iniciando servidor via fork: " + entry);
     const asarNodeModules = path.join(process.resourcesPath, "app.asar", "node_modules");
+    process.env.NODE_PATH = app.isPackaged ? asarNodeModules : "";
     serverProc  = fork(entry, [], { 
       silent: true, 
       env: { 
         ...process.env, 
-        PORT,
-        NODE_PATH: app.isPackaged ? asarNodeModules : ""
+        PORT 
       } 
     });
     serverProc.stdout?.on("data", d => {

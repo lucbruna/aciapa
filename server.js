@@ -23,6 +23,11 @@ const db        = require("./db");
 const isPkg = typeof process.pkg !== "undefined";
 const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
 
+// Diretorios customizaveis (usados pelo Electron para gravar em APPDATA em vez de Program Files)
+const AUTH_DIR  = process.env.ACIAPA_AUTH_DIR || "auth_info";
+const UPLOADS_DIR = process.env.ACIAPA_UPLOADS_DIR || "uploads";
+[AUTH_DIR, UPLOADS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, { cors:{ origin:"*" } });
@@ -44,7 +49,7 @@ if (isPkg) app.use(express.static(path.join(basePath,"dist")));
 // Servir boletos gerados de forma independente da pasta dist do ASAR (que é somente leitura)
 app.use("/boletos", express.static(path.join(basePath, "dist", "boletos")));
 
-const upload     = multer({ dest:"uploads/", limits:{ fileSize:50*1024*1024 } });
+const upload     = multer({ dest: UPLOADS_DIR + "/", limits:{ fileSize:50*1024*1024 } });
 const JWT_SECRET = process.env.JWT_SECRET || "aciapa_jwt_2025_fallback_key";
 
 const loginLimiter = rateLimit({
@@ -170,8 +175,8 @@ async function initWA() {
   try {
     const { default:makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
     const pino=require("pino"); const { Boom }=require("@hapi/boom");
-    if (!fs.existsSync("auth_info")) fs.mkdirSync("auth_info");
-    const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+    if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR);
+    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
     const { version } = await fetchLatestBaileysVersion();
     waClient = makeWASocket({ version, logger:pino({level:"silent"}), printQRInTerminal:false, auth:state, browser:["ACIAPA","Chrome","2.0"] });
     waClient.ev.on("connection.update", async({connection,lastDisconnect,qr})=>{
@@ -181,7 +186,7 @@ async function initWA() {
         const r=new Boom(lastDisconnect?.error)?.output?.statusCode;
         waStatus="disconnected"; io.emit("wa_status",{status:"disconnected",reason:r});
         if (r!==DisconnectReason.loggedOut) setTimeout(initWA,5000);
-        else { fs.rmSync("auth_info",{recursive:true,force:true}); fs.mkdirSync("auth_info"); setTimeout(initWA,3000); }
+        else { fs.rmSync(AUTH_DIR,{recursive:true,force:true}); fs.mkdirSync(AUTH_DIR); setTimeout(initWA,3000); }
       }
     });
     waClient.ev.on("creds.update", saveCreds);
@@ -303,7 +308,7 @@ app.get("/api/export/financeiro", auth(), (req,res)=>{ const {mes,ano}=req.query
 // WHATSAPP
 app.get("/api/wa/status",   auth(), (_,res)=>res.json({status:waStatus,qr:waQR}));
 app.post("/api/wa/init",    auth(["super_admin","admin"]), (_,res)=>{ initWA(); res.json({ok:true}); });
-app.post("/api/wa/logout",  auth(["super_admin","admin"]), async(_,res)=>{ try{await waClient?.logout();}catch(_){} if(fs.existsSync("auth_info")) fs.rmSync("auth_info",{recursive:true,force:true}); fs.mkdirSync("auth_info"); waStatus="disconnected";waClient=null;io.emit("wa_status",{status:"disconnected"}); setTimeout(initWA,2000); res.json({ok:true}); });
+app.post("/api/wa/logout",  auth(["super_admin","admin"]), async(_,res)=>{ try{await waClient?.logout();}catch(_){} if(fs.existsSync(AUTH_DIR)) fs.rmSync(AUTH_DIR,{recursive:true,force:true}); fs.mkdirSync(AUTH_DIR); waStatus="disconnected";waClient=null;io.emit("wa_status",{status:"disconnected"}); setTimeout(initWA,2000); res.json({ok:true}); });
 app.post("/api/wa/send",    auth(), (req,res)=>{ const {telefone,mensagem,prioridade}=req.body; if(!telefone||!mensagem) return res.status(400).json({error:"telefone e mensagem obrigatórios"}); const item={id:uid(),telefone,mensagem,status:"queued",createdAt:new Date().toISOString()}; if(prioridade==="alta") waQueue.unshift(item); else waQueue.push(item); if(waStatus==="connected") processWaQueue(); io.emit("wa_queue_add",item); res.json({ok:true,id:item.id}); });
 app.post("/api/wa/campanha",auth(["super_admin","admin","financeiro"]), (req,res)=>{ const {nome,contatos,mensagem}=req.body; if(!contatos?.length||!mensagem) return res.status(400).json({error:"contatos[] e mensagem obrigatórios"}); const camp=db.campanhas.insert({nome:nome||"Campanha "+new Date().toLocaleDateString("pt-BR"),mensagem,total:contatos.length,enviados:0,falhas:0,status:"running"}); const items=contatos.map(c=>({id:uid(),telefone:c.telefone||c,mensagem:mensagem.replace(/\{\{nome\}\}/gi,c.nome||"").replace(/\{\{valor\}\}/gi,fmt(c.valor||0)).replace(/\{\{vencimento\}\}/gi,c.dataVencimento||""),status:"queued",campanhaId:camp.id,createdAt:new Date().toISOString()})); waQueue.push(...items); if(waStatus==="connected") processWaQueue(); io.emit("campanha_add",camp); res.json({ok:true,campanhaId:camp.id,total:items.length}); });
 app.get("/api/wa/queue",      auth(), (_,res)=>res.json({total:waQueue.length,items:waQueue.slice(0,50)}));
@@ -958,15 +963,18 @@ async function queryIA(pergunta) {
 
 // ── Backup ────────────────────────────────────────────────────────────────────
 app.get("/api/admin/backup", auth(["super_admin"]), async (req, res) => {
-  const dirs = ["data", "uploads", "auth_info"];
+  const dirs = [
+    { name:"data",     path: process.env.ACIAPA_DATA_DIR || path.join(basePath, "data") },
+    { name:"uploads",  path: process.env.ACIAPA_UPLOADS_DIR || path.join(basePath, "uploads") },
+    { name:"auth_info",path: process.env.ACIAPA_AUTH_DIR || path.join(basePath, "auth_info") },
+  ];
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", `attachment; filename="aciapa_backup_${new Date().toISOString().slice(0,10)}.zip"`);
   const archiver = require("archiver");
   const archive = archiver("zip", { zlib: { level: 6 } });
   archive.pipe(res);
   for (const d of dirs) {
-    const p = path.join(basePath, d);
-    if (fs.existsSync(p)) archive.directory(p, d);
+    if (fs.existsSync(d.path)) archive.directory(d.path, d.name);
   }
   archive.file(path.join(__dirname, "package.json"), { name: "package.json" });
   archive.file(path.join(__dirname, "server.js"), { name: "server.js" });
@@ -1105,8 +1113,8 @@ cron.schedule("0 9 * * *", ()=>{ const s=getStats(); if(s.atrasados>0){ io.emit(
 
 const PORT=process.env.PORT||3001;
 server.listen(PORT, ()=>{
-  if (!fs.existsSync("auth_info")) fs.mkdirSync("auth_info");
-  if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+  if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR);
+  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
   console.log(`\n==============================================\n  ACIAPA v2.0 -- Iniciado!\n  http://localhost:${PORT}\n  Login: admin@aciapa.com / nexus123\n==============================================\n`);
   const cfg=db.settings.findOne({key:"empresa"});
   if(cfg?.whatsappAtivo) setTimeout(initWA,3000);
