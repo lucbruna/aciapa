@@ -429,13 +429,15 @@ app.put("/api/settings", auth(["super_admin","admin"]), (req,res)=>{ const cur=d
 // SMTP CONFIG
 app.get("/api/smtp-config", auth(), (_,res)=>{
   const cfg=db.settings.findOne({key:"smtp"})||{};
-  if(cfg.senha) cfg.senha="***";
-  res.json(cfg);
+  const {senha:_, ...safe} = cfg;
+  safe.senhaSet = !!cfg.senha;
+  res.json(safe);
 });
 app.put("/api/smtp-config", auth(["super_admin","admin"]), (req,res)=>{
   const cur=db.settings.findOne({key:"smtp"});
   const upd={...req.body};
-  if(upd.senha==="***") delete upd.senha;
+  if (upd.senha === "" || upd.senha === undefined) delete upd.senha;
+  delete upd.senhaSet;
   if(cur) db.settings.update(cur.id,{...upd,key:"smtp"});
   else db.settings.insert({key:"smtp",...upd});
   res.json({ok:true});

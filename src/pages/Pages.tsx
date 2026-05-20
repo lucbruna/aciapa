@@ -606,7 +606,7 @@ export function Configuracoes({ toast, api, reload }) {
   useEffect(()=>{
     if(tab==="email"){
       api("/api/smtp-config").then(r=>r.json()).then(d=>{
-        setCfg({smtpHost:d.host||"",smtpPort:d.port||"587",smtpUsuario:d.usuario||"",smtpSenha:d.senha||"",smtpRemetente:d.remetente||"",smtpSecure:d.secure||false});
+        setCfg({smtpHost:d.host||"",smtpPort:d.port||"587",smtpUsuario:d.usuario||"",smtpSenha:d.senha||"",smtpRemetente:d.remetente||"",smtpSecure:d.secure||false,smtpSenhaSet:d.senhaSet||false});
       }).catch(()=>{});
     } else {
       api("/api/settings").then(r=>r.json()).then(setCfg).catch(()=>{});
@@ -616,7 +616,9 @@ export function Configuracoes({ toast, api, reload }) {
 
   const saveCfg=async()=>{
     if(tab==="email"){
-      await api("/api/smtp-config",{method:"PUT",body:JSON.stringify({host:cfg.smtpHost,port:cfg.smtpPort,usuario:cfg.smtpUsuario,senha:cfg.smtpSenha,remetente:cfg.smtpRemetente,secure:cfg.smtpSecure})});
+      const body:any = {host:cfg.smtpHost,port:cfg.smtpPort,usuario:cfg.smtpUsuario,remetente:cfg.smtpRemetente,secure:cfg.smtpSecure};
+      if (cfg.smtpSenha) body.senha = cfg.smtpSenha;
+      await api("/api/smtp-config",{method:"PUT",body:JSON.stringify(body)});
     } else {
       await api("/api/settings",{method:"PUT",body:JSON.stringify(cfg)});
     }
@@ -779,8 +781,8 @@ export function Configuracoes({ toast, api, reload }) {
                 <input value={cfg.smtpUsuario||""} onChange={e=>setCfg({...cfg,smtpUsuario:e.target.value})} placeholder="seu@email.com" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
               </div>
               <div>
-                <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Senha *</label>
-                <input type="password" value={cfg.smtpSenha||""} onChange={e=>setCfg({...cfg,smtpSenha:e.target.value})} placeholder="senha ou app password" style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
+                <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Senha</label>
+                <input type="password" value={cfg.smtpSenha||""} onChange={e=>setCfg({...cfg,smtpSenha:e.target.value})} placeholder={cfg.smtpSenhaSet ? "•••••••• (deixe vazio para manter)" : "senha ou app password"} style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,width:"100%",borderRadius:12,padding:"10px 14px",fontSize:13,outline:"none"}}/>
               </div>
               <div>
                 <label style={{color:C.sub}} className="text-xs font-bold mb-1.5 block uppercase tracking-wider">Remetente (opcional)</label>
