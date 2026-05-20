@@ -1,0 +1,38 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Rebuild better-sqlite3 for Electron
+        run: npx @electron/rebuild -f -w better-sqlite3 --only better-sqlite3
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Package Electron app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --x64
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-electron/ACIAPA-Setup-*.exe
+          generate_release_notes: true
