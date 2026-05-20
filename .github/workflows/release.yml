@@ -20,8 +20,11 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Rebuild better-sqlite3 for Electron
-        run: npx @electron/rebuild -f -w better-sqlite3 --only better-sqlite3
+      - name: Upgrade node-gyp for Python 3 compat
+        run: |
+          npm install -g node-gyp@latest
+          Remove-Item -Recurse -Force node_modules\node-gyp -ErrorAction SilentlyContinue
+          pip install setuptools
 
       - name: Build frontend
         run: npm run build

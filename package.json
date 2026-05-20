@@ -105,7 +105,7 @@
       "uninstallDisplayName": "ACIAPA ${version} — Gestão Empresarial Completa",
       "menuCategory": true
     },
-    "npmRebuild": false,
+    "npmRebuild": true,
     "directories": {
       "output": "dist-electron",
       "buildResources": "buildResources"
