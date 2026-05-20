@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
@@ -17,29 +17,31 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Create required directories
-        run: |
-          New-Item -ItemType Directory -Force -Path data, uploads, auth_info | Out-Null
+      - name: Create required dirs (not tracked by git)
+        run: New-Item -ItemType Directory -Force -Path uploads, auth_info | Out-Null
 
-      - name: Install deps (skip broken install scripts)
+      - name: Install deps
         run: npm ci --ignore-scripts
 
-      - name: Rebuild better-sqlite3 for Electron
+      - name: Rebuild native modules for Electron
         run: npx @electron/rebuild -f -w better-sqlite3 --only better-sqlite3
 
       - name: Build frontend
         run: npm run build
 
-      - name: Package Electron app
+      - name: Package
+        run: npx electron-builder --win nsis --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node node_modules/electron-builder/cli.js --win nsis --x64
 
-      - name: List dist-electron output
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         if: success() || failure()
-        run: Get-ChildItem dist-electron -Name
+        with:
+          name: dist-electron
+          path: dist-electron/
 
-      - name: Create Release
+      - name: Release
         uses: softprops/action-gh-release@v2
         if: success()
         with:
