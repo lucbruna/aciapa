@@ -1,4 +1,4 @@
-import { io } from "socket.io-client";
+import { getSocket as getApiSocket } from "./lib/api.js";
 
 const DARK = {
   bg:"#020408", surface:"#060b14", card:"#0a1020", card2:"#0f1830",
@@ -25,6 +25,17 @@ export const C = new Proxy(DARK, {
   },
 }) as typeof DARK;
 
-export const socket = io(window.location.origin, { autoConnect:true });
+export const socket = new Proxy({} as ReturnType<typeof getApiSocket>, {
+  get(_, prop) {
+    const s = getApiSocket();
+    const v = (s as any)[prop as string];
+    return typeof v === "function" ? v.bind(s) : v;
+  },
+  set(_, prop, val) {
+    const s = getApiSocket();
+    (s as any)[prop as string] = val;
+    return true;
+  },
+});
 export const fmt = v => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(v||0);
 export const fmtN = v => new Intl.NumberFormat("pt-BR").format(v||0);
