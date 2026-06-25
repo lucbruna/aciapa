@@ -8,6 +8,9 @@ on:
 jobs:
   release:
     runs-on: windows-2022
+    permissions:
+      contents: write
+      actions: read
 
     steps:
       - uses: actions/checkout@v4
@@ -53,4 +56,4 @@ jobs:
             dist-electron/ACIAPA-Setup-*.exe
             dist-electron/latest.yml
             dist-electron/builder-debug.yml
-          generate_release_notes: true
+          generate_release_notes: false
