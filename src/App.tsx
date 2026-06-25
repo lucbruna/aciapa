@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
-import { ConnectionProvider, useConnection } from "./contexts/ConnectionContext.js";
+import { ConnectionProvider, useConnection } from "./contexts/ConnectionContext.jsx";
 import ConnectScreen from "./pages/ConnectScreen.jsx";
 import Login from "./pages/Login.jsx";
 import Sidebar from "./components/Sidebar.jsx";

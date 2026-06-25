@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useConnection } from "../contexts/ConnectionContext.js";
+import { useConnection } from "../contexts/ConnectionContext.jsx";
 import { Zap, Wifi, Search, ArrowRight, Server, RefreshCw, AlertCircle, Monitor, Smartphone } from "lucide-react";
 
 export default function ConnectScreen() {
