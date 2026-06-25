@@ -22,6 +22,10 @@ jobs:
 
       - name: Install deps
         run: npm ci
+        env:
+          npm_config_loglevel: warn
+          npm_config_audit: false
+          npm_config_fund: false
 
       - name: Build frontend
         run: npm run build
