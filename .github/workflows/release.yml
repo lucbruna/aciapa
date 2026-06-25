@@ -14,17 +14,17 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Create required dirs (not tracked by git)
         run: New-Item -ItemType Directory -Force -Path uploads, auth_info | Out-Null
 
       - name: Install deps
-        run: npm ci --ignore-scripts
+        run: npm ci
 
       - name: Rebuild native modules for Electron
-        run: npx @electron/rebuild -f -w better-sqlite3 --only better-sqlite3
+        run: npx @electron/rebuild -f -w better-sqlite3 -w bcryptjs
 
       - name: Build frontend
         run: npm run build
