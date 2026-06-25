@@ -28,7 +28,7 @@ jobs:
           npm_config_fund: false
 
       - name: Rebuild native modules
-        run: npx @electron/rebuild -f -w better-sqlite3 -w bcryptjs
+        run: npx @electron/rebuild -f -w better-sqlite3,bcryptjs
 
       - name: Build frontend
         run: npm run build
