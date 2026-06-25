@@ -21,16 +21,16 @@ jobs:
         run: New-Item -ItemType Directory -Force -Path uploads, auth_info | Out-Null
 
       - name: Install deps
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Rebuild native modules for Electron
-        run: npx @electron/rebuild -f -w better-sqlite3 -w bcryptjs
+        run: npx --no-install @electron/rebuild -f -w better-sqlite3 -w bcryptjs
 
       - name: Build frontend
         run: npm run build
 
       - name: Package
-        run: npx electron-builder --win nsis --x64
+        run: npx --no-install electron-builder --win nsis --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
