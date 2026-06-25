@@ -1,5 +1,5 @@
 import { useState, useEffect, createElement } from "react";
-import { BarChart3, Users, DollarSign, MessageSquare, Bot, Layers, Calendar, FileText, Settings, ChevronRight, Zap, Star, Package, UserCheck, Mail, Receipt, Scale, Sun, Moon, X as XIcon } from "lucide-react";
+import { BarChart3, Users, DollarSign, MessageSquare, Bot, Layers, Calendar, FileText, Settings, ChevronRight, Zap, Star, Package, UserCheck, Mail, Receipt, Scale, Sun, Moon, X as XIcon, Gift } from "lucide-react";
 import { C } from "../constants.js";
 import { useTheme } from "../contexts/ThemeContext.jsx";
 export default function Sidebar({ page, setPage, stats, waStatus, mobileOpen, onToggleMobile }) {
@@ -37,11 +37,12 @@ export default function Sidebar({ page, setPage, stats, waStatus, mobileOpen, on
     {id:"contabilidade",icon:Receipt,    label:"Contabilidade",  badge:null},
     {id:"advocacia",  icon:Scale,        label:"Advocacia",      badge:"Jur",bc:"cyan"},
     {group:"GESTÃO"},
+    {id:"aniversariantes",icon:Gift,     label:"Aniversariantes",badge:stats?.aniversariantesHoje?.length>0?stats.aniversariantesHoje.length:null,bc:"pink"},
     {id:"agenda",     icon:Calendar,     label:"Agenda",         badge:null},
     {id:"relatorios", icon:FileText,     label:"Relatórios",     badge:null},
     {id:"configuracoes",icon:Settings,   label:"Configurações",  badge:null},
   ];
-  const bc={red:C.red,green:C.green,amber:C.amber,purple:C.purple,cyan:C.cyan};
+  const bc={red:C.red,green:C.green,amber:C.amber,purple:C.purple,cyan:C.cyan,pink:"#ec4899"};
   const fmt=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(v||0);
   return (
     <>
@@ -76,7 +77,7 @@ export default function Sidebar({ page, setPage, stats, waStatus, mobileOpen, on
         <div style={{borderTop:`1px solid ${C.border}`}} className="p-3">
           <div style={{background:C.card2,border:`1px solid ${C.border}`}} className="rounded-xl p-3 space-y-2">
             <div style={{color:C.muted}} className="text-[9px] font-extrabold uppercase tracking-wider">Resumo Hoje</div>
-            {[["Ativos",stats.ativos,C.green],["Atrasados",stats.atrasados,C.red],["Receita",fmt(stats.receitaMes),C.indigo],["Adimpl.",`${stats.percentualAdimplencia||0}%`,stats.percentualAdimplencia>=80?C.green:C.amber]].map(([k,v,c])=>(
+            {([["Ativos",stats.ativos,C.green],["Atrasados",stats.atrasados,C.red],["Receita",fmt(stats.receitaMes),C.indigo],["Adimpl.",`${stats.percentualAdimplencia||0}%`,stats.percentualAdimplencia>=80?C.green:C.amber],stats.aniversariantesHoje?.length>0?["Aniv.Hoje",stats.aniversariantesHoje.length,"#ec4899"]:null] as any[]).filter(Boolean).map(([k,v,c])=>(
               <div key={k} className="flex items-center justify-between">
                 <span style={{color:C.muted}} className="text-[11px]">{k}</span>
                 <span style={{color:c}} className="text-[11px] font-bold">{v}</span>

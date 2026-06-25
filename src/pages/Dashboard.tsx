@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { C, fmt, fmtN } from "../constants.js";
 import { AreaChart, Area, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, DollarSign, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, Wallet, Target, Activity, Zap, MessageSquare, RefreshCw, Sparkles, ChevronRight } from "lucide-react";
+import { Users, DollarSign, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, Wallet, Target, Activity, Zap, MessageSquare, RefreshCw, Sparkles, ChevronRight, Gift } from "lucide-react";
 
 export default function Dashboard({ stats, reload, toast, api }) {
   const navigate = useNavigate();
@@ -57,6 +57,38 @@ export default function Dashboard({ stats, reload, toast, api }) {
             <button onClick={()=>navigate("/chatia")} style={{background:"rgba(244,63,94,0.12)",color:C.red,border:"1px solid rgba(244,63,94,0.3)"}} className="px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500/20">Chat IA</button>
             <button onClick={()=>navigate("/crm")} style={{background:C.red,color:"white"}} className="px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90">Ver Clientes</button>
           </div>
+        </div>
+      )}
+      {stats.aniversariantesHoje?.length>0&&(
+        <div style={{background:"#ec489915",border:"1px solid rgba(236,72,153,0.3)"}} className="flex items-center justify-between rounded-2xl px-5 py-3.5">
+          <div className="flex items-center gap-3">
+            <div style={{background:"rgba(236,72,153,0.2)"}} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"><Gift size={18} style={{color:"#ec4899"}} className="animate-bounce"/></div>
+            <div>
+              <div style={{color:"#ec4899"}} className="font-bold text-sm">Aniversariantes do Dia! 🎉</div>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {stats.aniversariantesHoje.map(a=>(
+                  <span key={a.id} style={{background:"rgba(236,72,153,0.12)",color:"#ec4899",border:"1px solid rgba(236,72,153,0.25)"}} className="text-xs font-bold px-2 py-1 rounded-lg">{a.nome}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button onClick={()=>navigate("/aniversariantes")} style={{background:"#ec4899",color:"white"}} className="px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90">Ver Todos</button>
+        </div>
+      )}
+      {stats.aniversariantesProximos?.length>0&&(
+        <div style={{background:C.redDim,border:"1px solid rgba(244,63,94,0.3)"}} className="flex items-center justify-between rounded-2xl px-5 py-3.5">
+          <div className="flex items-center gap-3">
+            <div style={{background:"rgba(244,63,94,0.2)"}} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"><Gift size={18} style={{color:C.red}}/></div>
+            <div>
+              <div style={{color:C.red}} className="font-bold text-sm">Aniversariantes Próximos</div>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                {stats.aniversariantesProximos.map(a=>(
+                  <span key={a.id} style={{background:C.redDim,color:C.red,border:"1px solid rgba(244,63,94,0.25)"}} className="text-xs font-bold px-2 py-1 rounded-lg">{a.nome}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button onClick={()=>navigate("/aniversariantes")} style={{background:C.red,color:"white"}} className="px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90">Ver Todos</button>
         </div>
       )}
 

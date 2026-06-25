@@ -18,7 +18,24 @@ const fs        = require("fs");
 const qrcode    = require("qrcode");
 const rateLimit = require("express-rate-limit");
 const nodemailer= require("nodemailer");
+const Bonjour = require("bonjour-service");
 const db        = require("./db");
+
+// ── mDNS advertiser (descoberta automática na rede) ──
+let bonjour = null;
+try {
+  bonjour = new Bonjour();
+  bonjour.publish({
+    name: "ACIAPA Server",
+    type: "aciapa",
+    protocol: "tcp",
+    port: process.env.PORT || 3001,
+    txt: { versao: "2.2.0", nome: "ACIAPA" },
+  });
+  console.log(`  ✓ mDNS: ACIAPA anunciado na rede como 'ACIAPA Server'`);
+} catch (e) {
+  console.log("  ⚠ mDNS não disponível:", e.message);
+}
 
 const isPkg = typeof process.pkg !== "undefined";
 const basePath = isPkg ? path.dirname(process.execPath) : __dirname;
@@ -109,6 +126,21 @@ try {
   } catch {}
 }
 
+// ── Descoberta automática na rede local ──
+app.get("/api/discover", (_, res) => {
+  const os = require("os");
+  const nets = Object.values(os.networkInterfaces()).flat().filter(i => i.family === "IPv4" && !i.internal).map(i => i.address);
+  res.json({
+    nome: "ACIAPA",
+    versao: pkg.version,
+    hostname: os.hostname(),
+    ip: nets[0] || "unknown",
+    porta: process.env.PORT || 3001,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get("/api/versao", (_, res) => {
   res.json({
     versao: pkg.version,
@@ -165,6 +197,8 @@ function getStats() {
     campanhasAtivas:db.campanhas.find({status:"running"}).length,
     listAtrasados:ativos.filter(c=>calcSit(c)==="atrasado").map(c=>({...c,_diasAtraso:diasAtraso(c.dataVencimento)})).sort((a,b)=>b._diasAtraso-a._diasAtraso),
     listVencendo:ativos.filter(c=>calcSit(c)==="vencendo"),
+    aniversariantesHoje:db.aniversariantes.all.filter(a=>{const p=a.dataNascimento?.split("-");if(!p||p.length<3)return false;const h=new Date();return +p[1]===h.getMonth()+1&&+p[2]===h.getDate();}),
+    aniversariantesProximos:db.aniversariantes.all.filter(a=>{const p=a.dataNascimento?.split("-");if(!p||p.length<3)return false;const h=new Date();const dm=new Date(h.getFullYear(),+p[1]-1,+p[2]);const dif=Math.round((dm.getTime()-h.getTime())/86400000);return dif>=0&&dif<=2&&!((+p[1]===h.getMonth()+1)&&(+p[2]===h.getDate()));}),
   };
 }
 
@@ -283,12 +317,18 @@ app.get("/api/associados", auth(), (req,res)=>{
   if(search){const q=search.toLowerCase();list=list.filter(a=>a.nome.toLowerCase().includes(q)||a.email.toLowerCase().includes(q)||(a.telefone||"").includes(q));}
   res.json(list);
 });
-app.get("/api/associados/export", auth(), (_,res)=>{ const rows=db.associados.all.map(a=>({Nome:a.nome,Email:a.email,Telefone:a.telefone,CPF:a.cpf,"Data de Entrada":a.dataEntrada,Status:a.status,Cidade:a.cidade})); const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Associados");const buf=XLSX.write(wb,{type:"buffer",bookType:"xlsx"});res.setHeader("Content-Disposition",`attachment; filename="associados_${Date.now()}.xlsx"`);res.setHeader("Content-Type","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");res.send(buf); });
+app.get("/api/associados/export", auth(), (_,res)=>{ const rows=db.associados.all.map(a=>({Codigo:a.codigo,Nome:a.nome,Email:a.email,Telefone:a.telefone,CPF:a.cpf,"Data de Entrada":a.dataEntrada,Status:a.status,Cidade:a.cidade})); const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Associados");const buf=XLSX.write(wb,{type:"buffer",bookType:"xlsx"});res.setHeader("Content-Disposition",`attachment; filename="associados_${Date.now()}.xlsx"`);res.setHeader("Content-Type","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");res.send(buf); });
 app.get("/api/associados/:id",   auth(), (req,res)=>{ const a=db.associados.findById(req.params.id); if(!a) return res.status(404).json({error:"Não encontrado"}); res.json(a); });
 app.post("/api/associados",      auth(), (req,res)=>{ const a=db.associados.insert(req.body); io.emit("data_update",{type:"associado"}); res.json({ok:true,associado:a}); });
 app.put("/api/associados/:id",   auth(), (req,res)=>{ const a=db.associados.update(req.params.id,req.body); io.emit("data_update",{type:"associado"}); res.json({ok:true,associado:a}); });
 app.delete("/api/associados/:id",auth(["super_admin","admin"]), (req,res)=>{ db.associados.delete(req.params.id); io.emit("data_update",{type:"associado"}); res.json({ok:true}); });
-app.post("/api/associados/import", auth(["super_admin","admin"]), upload.single("file"), (req,res)=>{ if(!req.file) return res.status(400).json({error:"Arquivo não enviado"}); try { const wb=XLSX.readFile(req.file.path);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:""});let n=0; rows.forEach(r=>{ if(!r.nome&&!r.Nome) return; db.associados.insert({nome:String(r.nome||r.Nome||"").trim(),email:String(r.email||r.Email||"").trim(),telefone:String(r.telefone||r.Telefone||"").replace(/\D/g,""),cpf:String(r.cpf||r.CPF||"").trim(),dataEntrada:r.dataEntrada||hoje(),status:String(r.status||r.Status||"ativo").toLowerCase().includes("ativ")?"ativo":"inativo",cidade:String(r.cidade||r.Cidade||"").trim(),observacoes:""}); n++; }); fs.unlinkSync(req.file.path); io.emit("data_update",{type:"associado"}); res.json({ok:true,importados:n}); } catch(e){ try{fs.unlinkSync(req.file.path);}catch(_){} res.status(500).json({error:e.message}); } });
+app.post("/api/associados/import", auth(["super_admin","admin"]), upload.single("file"), (req,res)=>{ if(!req.file) return res.status(400).json({error:"Arquivo não enviado"}); try { const wb=XLSX.readFile(req.file.path);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:""});let n=0; rows.forEach(r=>{ if(!r.nome&&!r.Nome) return; db.associados.insert({nome:String(r.nome||r.Nome||"").trim(),codigo:String(r.codigo||r.Codigo||"").trim(),email:String(r.email||r.Email||"").trim(),telefone:String(r.telefone||r.Telefone||"").replace(/\D/g,""),cpf:String(r.cpf||r.CPF||"").trim(),dataEntrada:r.dataEntrada||hoje(),status:String(r.status||r.Status||"ativo").toLowerCase().includes("ativ")?"ativo":"inativo",cidade:String(r.cidade||r.Cidade||"").trim(),observacoes:""}); n++; }); fs.unlinkSync(req.file.path); io.emit("data_update",{type:"associado"}); res.json({ok:true,importados:n}); } catch(e){ try{fs.unlinkSync(req.file.path);}catch(_){} res.status(500).json({error:e.message}); } });
+
+// ANIVERSARIANTES
+app.get("/api/aniversariantes", auth(), (req,res)=>{ res.json(db.aniversariantes.all); });
+app.post("/api/aniversariantes", auth(), (req,res)=>{ const a=db.aniversariantes.insert(req.body); io.emit("data_update",{type:"aniversariante"}); res.json({ok:true,aniversariante:a}); });
+app.put("/api/aniversariantes/:id", auth(), (req,res)=>{ const a=db.aniversariantes.update(req.params.id,req.body); io.emit("data_update",{type:"aniversariante"}); res.json({ok:true,aniversariante:a}); });
+app.delete("/api/aniversariantes/:id", auth(), (req,res)=>{ db.aniversariantes.delete(req.params.id); io.emit("data_update",{type:"aniversariante"}); res.json({ok:true}); });
 
 // KANBAN
 app.get("/api/kanban",         auth(), (_,res)=>res.json(db.kanban.all));
@@ -1119,5 +1159,5 @@ server.listen(PORT, ()=>{
   const cfg=db.settings.findOne({key:"empresa"});
   if(cfg?.whatsappAtivo) setTimeout(initWA,3000);
 });
-process.on("SIGINT",()=>process.exit(0));
-process.on("SIGTERM",()=>process.exit(0));
+process.on("SIGINT",()=>{ try{ bonjour?.unpublishAll(); bonjour?.destroy(); }catch(e){} process.exit(0); });
+process.on("SIGTERM",()=>{ try{ bonjour?.unpublishAll(); bonjour?.destroy(); }catch(e){} process.exit(0); });

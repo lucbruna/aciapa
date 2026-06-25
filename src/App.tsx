@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
+import { ConnectionProvider, useConnection } from "./contexts/ConnectionContext.js";
+import ConnectScreen from "./pages/ConnectScreen.jsx";
 import Login from "./pages/Login.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -10,6 +12,7 @@ import Financeiro from "./pages/Financeiro.jsx";
 import WhatsApp from "./pages/WhatsApp.jsx";
 import ChatIA from "./pages/ChatIA.jsx";
 import Estoque from "./pages/Estoque.jsx";
+import Aniversariantes from "./pages/Aniversariantes.jsx";
 import RH from "./pages/RH.jsx";
 import Email from "./pages/Email.jsx";
 import Contabilidade from "./pages/Contabilidade.jsx";
@@ -19,6 +22,7 @@ import PortalLogin from "./pages/PortalLogin.jsx";
 import PortalDashboard from "./pages/PortalDashboard.jsx";
 import { Minus, Square, Bell, LogOut, AlertTriangle, CheckCircle, X, Info, Menu } from "lucide-react";
 import { C, socket, fmt, fmtN } from "./constants.js";
+import { apiFetch } from "./lib/api.js";
 import { ThemeProvider } from "./contexts/ThemeContext.jsx";
 
 export function Toast({ msg, type, onClose }) {
@@ -73,6 +77,7 @@ function PortalApp() {
 
 function AppInner() {
   const { user, logout, token } = useAuth();
+  const { isConnected, isScanning, discoveredServers, startDiscovery } = useConnection();
   const navigate = useNavigate();
   const location = useLocation();
   const [stats,   setStats]  = useState<any>(null);
@@ -82,13 +87,19 @@ function AppInner() {
   const [waStatus,setWaStatus]=useState("disconnected");
   const [mobileMenu, setMobileMenu] = useState(false);
 
+  // Se for Capacitor (file://) e não conectado, mostra tela de descoberta
+  const isCapacitor = typeof window !== "undefined" && window.location.protocol === "file:";
+  if (isCapacitor && !isConnected && !location.pathname.startsWith("/portal")) {
+    return <ConnectScreen />;
+  }
+
   // Portal routes — render sem layout admin
   if (location.pathname.startsWith("/portal")) {
     return <PortalApp />;
   }
 
   const toast=(msg,type="info")=>setToasts(t=>[...t,{id:Date.now()+Math.random(),msg,type}]);
-  const api=(url,opts:any={})=>fetch(url,{...opts,headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`,...(opts.headers||{})}});
+  const api=(url,opts:any={})=>apiFetch(url,{...opts,headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`,...(opts.headers||{})}});
   const loadStats=async()=>{ try{ const s=await api("/api/stats").then(r=>r.json()); setStats(s); }catch(_){} };
   const setPage = p => navigate(`/${p}`);
 
@@ -125,7 +136,7 @@ function AppInner() {
 
   if (!user) return <Login/>;
 
-  const pageLabel={dashboard:"Dashboard",crm:"CRM — Clientes",associados:"Associados",financeiro:"Financeiro",whatsapp:"WhatsApp",chatia:"Chat com IA",kanban:"Pipeline Kanban",estoque:"Estoque",rh:"RH & Pessoal",email:"E-mail",contabilidade:"Contabilidade",advocacia:"Advocacia",agenda:"Agenda",relatorios:"Relatórios",configuracoes:"Configurações"};
+  const pageLabel={dashboard:"Dashboard",crm:"CRM — Clientes",associados:"Associados",financeiro:"Financeiro",whatsapp:"WhatsApp",chatia:"Chat com IA",kanban:"Pipeline Kanban",estoque:"Estoque",rh:"RH & Pessoal",email:"E-mail",contabilidade:"Contabilidade",advocacia:"Advocacia",aniversariantes:"Aniversariantes",agenda:"Agenda",relatorios:"Relatórios",configuracoes:"Configurações"};
 
   return (
     <div style={{background:C.bg,color:C.text,fontFamily:"'DM Sans',sans-serif"}} className="flex h-screen overflow-hidden">
@@ -195,6 +206,7 @@ function AppInner() {
             <Route path="/email"         element={<Email         toast={toast} api={api}/>}/>
             <Route path="/contabilidade" element={<Contabilidade  toast={toast} api={api}/>}/>
             <Route path="/advocacia"     element={<Advocacia      toast={toast} api={api}/>}/>
+            <Route path="/aniversariantes" element={<Aniversariantes toast={toast} api={api}/>}/>
             <Route path="/agenda"        element={<Agenda        toast={toast} api={api}/>}/>
             <Route path="/relatorios"    element={<Relatorios    toast={toast} api={api}/>}/>
             <Route path="/configuracoes" element={<Configuracoes  toast={toast} api={api} reload={loadStats}/>}/>
@@ -211,11 +223,13 @@ function AppInner() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider>
-          <AppInner/>
-        </ThemeProvider>
-      </AuthProvider>
+      <ConnectionProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <AppInner/>
+          </ThemeProvider>
+        </AuthProvider>
+      </ConnectionProvider>
     </BrowserRouter>
   );
 }

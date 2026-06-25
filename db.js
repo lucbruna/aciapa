@@ -194,7 +194,7 @@ function migrateFromJson(collectionName) {
 class AppDatabase {
   constructor() {
     // Migrar dados existentes
-    const collections = ["users","clientes","transacoes","mensagens","campanhas","kanban","atividades","notificacoes","templates","settings","chat_ia","planilhas","tarefas","produtos","rh","emails","contabilidade","notas_fiscais","advocacia","agenda","associados","email_subscribers"];
+    const collections = ["users","clientes","transacoes","mensagens","campanhas","kanban","atividades","notificacoes","templates","settings","chat_ia","planilhas","tarefas","produtos","rh","emails","contabilidade","notas_fiscais","advocacia","agenda","associados","email_subscribers","aniversariantes"];
     for (const name of collections) migrateFromJson(name);
 
     this.users       = new Collection("users");
@@ -218,6 +218,7 @@ class AppDatabase {
     this.advocacia   = new Collection("advocacia");
     this.agenda      = new Collection("agenda");
     this.associados  = new Collection("associados");
+    this.aniversariantes = new Collection("aniversariantes");
     this.email_subscribers = new Collection("email_subscribers");
 
     this._seed();

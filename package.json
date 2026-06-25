@@ -1,6 +1,6 @@
 {
   "name": "aciapa",
-  "version": "2.0.0",
+  "version": "2.2.1",
   "description": "ACIAPA — SaaS Empresarial Completo: IA + WhatsApp + CRM + Financeiro + Kanban",
   "main": "server.js",
   "scripts": {
@@ -10,14 +10,19 @@
     "build": "vite build",
     "start": "node server.js",
     "electron": "npm run build && electron electron/main.js",
-    "build:exe": "npm run build && electron-builder --win nsis --x64",
+    "build:android": "npm run build && npx cap sync android",
+    "open:android": "npx cap open android",
+    "build:exe": "npm run build && electron-builder --win nsis --x64 -p always",
     "build:portable": "npm run build && electron-builder --win portable --x64",
     "package": "build-pkg.bat"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "archiver": "^5.3.2",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.10.0",
+    "bonjour-service": "^1.4.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "electron-updater": "^6.8.3",
@@ -27,6 +32,7 @@
     "jsonwebtoken": "^9.0.2",
     "mercadopago": "^2.12.1",
     "multer": "^1.4.5-lts.1",
+    "multicast-dns": "^7.2.5",
     "node-cron": "^3.0.3",
     "nodemailer": "^8.0.7",
     "qrcode": "^1.5.3",
@@ -37,10 +43,11 @@
   },
   "optionalDependencies": {
     "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "^6.7.5",
+    "@whiskeysockets/baileys": "^6.7.23",
     "pino": "^8.17.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
     "@types/node": "^25.9.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
