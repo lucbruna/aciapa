@@ -1,6 +1,6 @@
 {
   "name": "aciapa",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "ACIAPA — SaaS Empresarial Completo: IA + WhatsApp + CRM + Financeiro + Kanban",
   "main": "server.js",
   "scripts": {
@@ -21,7 +21,7 @@
     "@capacitor/core": "^8.3.4",
     "archiver": "^5.3.2",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^12.10.0",
+    "better-sqlite3": "^12.11.1",
     "bonjour-service": "^1.4.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
@@ -43,7 +43,7 @@
   },
   "optionalDependencies": {
     "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "^6.7.23",
+    "@whiskeysockets/baileys": "^6.7.24",
     "pino": "^8.17.2"
   },
   "devDependencies": {
@@ -55,8 +55,8 @@
     "autoprefixer": "^10.4.16",
     "@electron/rebuild": "^3.6.2",
     "concurrently": "^8.2.2",
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1",
+    "electron": "^42.11.10",
+    "electron-builder": "^26.15.3",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.383.0",
@@ -137,6 +137,7 @@
       "electron/loading.html",
       "node_modules/better-sqlite3/**",
       "node_modules/bcryptjs/**",
+    "node_modules/@whiskeysockets/baileys/**",
       "data/**",
       "uploads/**",
       "auth_info/**"

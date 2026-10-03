@@ -212,7 +212,7 @@ async function initWA() {
     if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR);
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
     const { version } = await fetchLatestBaileysVersion();
-    waClient = makeWASocket({ version, logger:pino({level:"silent"}), printQRInTerminal:false, auth:state, browser:["ACIAPA","Chrome","2.0"] });
+    waClient = makeWASocket({ version, logger:pino({level:"silent"}), printQRInTerminal:false, auth:state, browser:["ACIAPA","Chrome","2.0"], shouldSyncHistoryMessage:()=>false });
     waClient.ev.on("connection.update", async({connection,lastDisconnect,qr})=>{
       if (qr) { waStatus="qr"; waQR=await qrcode.toDataURL(qr); io.emit("wa_qr",waQR); io.emit("wa_status",{status:"qr"}); }
       if (connection==="open")  { waStatus="connected"; waQR=null; io.emit("wa_status",{status:"connected"}); processWaQueue(); }
